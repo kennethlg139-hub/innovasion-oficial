@@ -124,7 +124,7 @@ export default function CatalogPage() {
     // Guardamos en localStorage y enviamos a bd
     localStorage.setItem('lead_name', nombre);
     localStorage.setItem('lead_phone', telefono);
-    await saveLeadSupabase(leadModal.prop.title, leadModal.leadAction || leadModal.action);
+    await saveLeadSupabase(leadModal.prop.title, leadModal.action);
 
     setSubmitting(false);
 
