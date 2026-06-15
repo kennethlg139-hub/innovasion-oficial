@@ -3,9 +3,16 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://jovcdrplavvsfxrgaqle.supabase.co';
-const supabaseAnonKey = 'sb_publishable_LvLvFMyl2bI4TLezUnUXLg_kUsD0cou';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient('https://jovcdrplavvsfxrgaqle.supabase.co', 'sb_publishable_LvLvFMyl2bI4TLezUnUXLg_kUsD0cou');
+
+type Cliente = {
+  id: number;
+  nombre: string;
+  telefono: string;
+  terreno_interes: string;
+  tipo_accion: string;
+  created_at: string;
+};
 
 type Property = {
   id: number;
@@ -14,316 +21,165 @@ type Property = {
   price: string;
   status: string;
   image_url: string;
-  image_url_2?: string;
-  image_url_3?: string;
-  pdf_url?: string;
-  description?: string;
 };
 
 export default function AdminPage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [authError, setAuthError] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [activeTab, setActiveTab] = useState<'properties' | 'clients'>('properties');
   
+  // Estados para propiedades (tu crud existente)
   const [properties, setProperties] = useState<Property[]>([]);
-  const [editingProp, setEditingProp] = useState<Property | null>(null);
-
-  const [title, setTitle] = useState('');
-  const [size, setSize] = useState('');
-  const [price, setPrice] = useState('');
-  const [status, setStatus] = useState('Disponible');
-  const [imageUrl, setImageUrl] = useState('');
-  const [imageUrl2, setImageUrl2] = useState('');
-  const [imageUrl3, setImageUrl3] = useState('');
-  const [pdfUrl, setPdfUrl] = useState('');
-  const [description, setDescription] = useState('');
+  const [loadingProps, setLoadingProps] = useState(true);
   
-  const [uploading, setUploading] = useState(false);
-  const [message, setMessage] = useState('');
+  // Estados para la nueva tabla de clientes
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [loadingClients, setLoadingClients] = useState(false);
 
   useEffect(() => {
-    if (localStorage.getItem('admin_active_session') === 'true') {
-      setIsLoggedIn(true);
-      fetchProperties();
+    // Verificamos sesión de admin
+    if (localStorage.getItem('admin_active_session') !== 'true') {
+      window.location.href = '/login';
+      return;
     }
+    setIsAdmin(true);
+    loadProperties();
   }, []);
 
-  const fetchProperties = async () => {
+  const loadProperties = async () => {
+    setLoadingProps(true);
     const { data } = await supabase.from('properties').select('*').order('id', { ascending: false });
     setProperties(data || []);
+    setLoadingProps(false);
   };
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError('');
-    if (username.trim().toLowerCase() === 'kennethlg139@gmail.com' && password.trim() === '2546') {
-      setIsLoggedIn(true);
-      localStorage.setItem('admin_active_session', 'true');
-      fetchProperties();
-    } else {
-      setAuthError('Acceso denegado. Usuario o PIN incorrectos.');
-      setPassword('');
-    }
+  const loadClientes = async () => {
+    setLoadingClients(true);
+    // Leemos la tabla pública 'clientes' ordenada por los más recientes
+    const { data } = await supabase.from('clientes').select('*').order('id', { ascending: false });
+    setClientes(data || []);
+    setLoadingClients(false);
   };
 
   const handleLogout = () => {
     localStorage.removeItem('admin_active_session');
-    setIsLoggedIn(false);
-    window.location.href = '/login';
+    window.location.href = '/';
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'img1' | 'img2' | 'img3' | 'pdf') => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    setMessage(`Subiendo ${type === 'pdf' ? 'archivo PDF' : 'imagen'}...`);
-
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-    const bucketName = type === 'pdf' ? 'pdfs' : 'properties';
-
-    const { error: uploadError } = await supabase.storage
-      .from(bucketName)
-      .upload(fileName, file);
-
-    if (uploadError) {
-      console.error("Error en Supabase Storage:", uploadError);
-      setMessage('Error al subir el archivo: ' + uploadError.message);
-      setUploading(false);
-      return;
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from(bucketName)
-      .getPublicUrl(fileName);
-
-    if (type === 'img1') setImageUrl(publicUrl);
-    if (type === 'img2') setImageUrl2(publicUrl);
-    if (type === 'img3') setImageUrl3(publicUrl);
-    if (type === 'pdf') setPdfUrl(publicUrl);
-
-    setMessage('¡Archivo cargado exitosamente!');
-    setUploading(false);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!imageUrl) {
-      setMessage('Por favor, sube al menos la primera imagen de la propiedad.');
-      return;
-    }
-
-    setUploading(true);
-    setMessage(editingProp ? 'Actualizando propiedad...' : 'Guardando propiedad...');
-
-    const payload = { 
-      title, 
-      size, 
-      price, 
-      status, 
-      image_url: imageUrl, 
-      image_url_2: imageUrl2 || null, 
-      image_url_3: imageUrl3 || null, 
-      pdf_url: pdfUrl || null, 
-      description 
-    };
-
-    if (editingProp) {
-      const { error } = await supabase.from('properties').update(payload).eq('id', editingProp.id);
-      if (error) setMessage('Error al actualizar: ' + error.message);
-      else setMessage('¡Propiedad actualizada exitosamente!');
-    } else {
-      const { error } = await supabase.from('properties').insert([payload]);
-      if (error) setMessage('Error al agregar: ' + error.message);
-      else setMessage('¡Propiedad agregada exitosamente al catálogo!');
-    }
-
-    setUploading(false);
-    resetForm();
-    fetchProperties();
-  };
-
-  const handleEdit = (prop: Property) => {
-    setEditingProp(prop);
-    setTitle(prop.title);
-    setSize(prop.size);
-    setPrice(prop.price);
-    setStatus(prop.status);
-    setImageUrl(prop.image_url);
-    setImageUrl2(prop.image_url_2 || '');
-    setImageUrl3(prop.image_url_3 || '');
-    setPdfUrl(prop.pdf_url || '');
-    setDescription(prop.description || '');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro de eliminar este terreno? Esta acción no se puede deshacer.')) return;
-    const { error } = await supabase.from('properties').delete().eq('id', id);
-    if (error) alert('Error al eliminar: ' + error.message);
-    else {
-      alert('Terreno eliminado correctamente.');
-      fetchProperties();
+  // Al cambiar de pestaña, cargamos los datos correspondientes
+  const switchTab = (tab: 'properties' | 'clients') => {
+    setActiveTab(tab);
+    if (tab === 'clients') {
+      loadClientes();
     }
   };
 
-  const resetForm = () => {
-    setEditingProp(null);
-    setTitle('');
-    setSize('');
-    setPrice('');
-    setStatus('Disponible');
-    setImageUrl('');
-    setImageUrl2('');
-    setImageUrl3('');
-    setPdfUrl('');
-    setDescription('');
-  };
-
-  if (!isLoggedIn) {
-    return (
-      <main className="min-h-screen bg-[#121212] flex items-center justify-center p-3 relative w-full overflow-x-hidden">
-        <div className="fixed inset-0 z-0 flex items-center justify-center pointer-events-none opacity-[0.03]">
-          <img src="/logo.png" alt="" className="w-[70%] max-w-[800px] object-contain grayscale" />
-        </div>
-        <div className="w-full max-w-md bg-[#1a1a1a] p-5 md:p-8 rounded-3xl border border-gray-800 shadow-2xl relative z-10 mx-2">
-          <div className="text-center mb-5">
-            <h1 className="text-lg sm:text-xl font-black text-white tracking-tight font-serif">Acceso Exclusivo Admin</h1>
-            <p className="text-gray-400 text-[10px] mt-1 font-light">Ingresa tus credenciales.</p>
-          </div>
-          {authError && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-[10px] text-red-300 text-center font-medium">{authError}</div>}
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1">Usuario (Email)</label>
-              <input type="email" value={username} onChange={e => setUsername(e.target.value)} required className="w-full bg-[#111111] border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-yellow-500" />
-            </div>
-            <div>
-              <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1">PIN de Acceso</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full bg-[#111111] border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-yellow-500" />
-            </div>
-            <button type="submit" className="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 text-black font-extrabold py-3.5 rounded-xl transition-all shadow-xl hover:brightness-110 mt-3 cursor-pointer text-xs tracking-wide uppercase">ACCEDER AL PANEL</button>
-          </form>
-        </div>
-      </main>
-    );
-  }
+  if (!isAdmin) return null;
 
   return (
-    <main className="min-h-screen bg-[#121212] text-gray-200 antialiased py-6 px-3 md:py-12 md:px-6 relative w-full overflow-x-hidden">
-      <div className="fixed inset-0 z-0 flex items-center justify-center pointer-events-none opacity-[0.03]">
-        <img src="/logo.png" alt="" className="w-[70%] max-w-[800px] object-contain grayscale" />
-      </div>
-
-      <div className="w-full max-w-3xl mx-auto relative z-10">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800 pb-5 mb-6">
+    <main className="min-h-screen bg-[#121212] text-gray-200 antialiased relative w-full p-4 md:p-8">
+      <div className="max-w-6xl mx-auto">
+        
+        {/* Cabecera del Panel */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-800 pb-5 mb-6">
           <div>
-            <h1 className="text-xl sm:text-2xl font-black text-white font-serif leading-tight">{editingProp ? 'Editar Propiedad' : 'Panel de Administración'}</h1>
-            <p className="text-gray-400 text-[10px] mt-0.5 font-light">{editingProp ? 'Modifica los datos del terreno.' : 'Agrega, edita o elimina propiedades.'}</p>
+            <h1 className="text-2xl md:text-3xl font-black text-white font-serif tracking-tight">Panel de Administración</h1>
+            <p className="text-gray-400 text-[10px] mt-0.5 uppercase tracking-wider">Innovasión — Bienes Raíces</p>
           </div>
-          <div className="flex items-center gap-2.5 self-end sm:self-center flex-shrink-0">
-            <a href="/catalogo" className="text-[10px] font-semibold uppercase text-gray-400 border border-gray-700 px-3 py-2 rounded-xl bg-[#1a1a1a]">Ver Catálogo</a>
-            <button onClick={handleLogout} className="text-[10px] font-semibold uppercase text-red-400 border border-red-900 px-3 py-2 rounded-xl bg-red-950/20 cursor-pointer">Salir</button>
+          <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+            <a href="/catalogo" className="text-[10px] font-extrabold uppercase bg-gray-800 text-gray-300 px-4 py-2.5 rounded-xl border border-gray-700">Ir al Catálogo</a>
+            <button onClick={handleLogout} className="text-[10px] font-extrabold uppercase bg-red-950/20 text-red-400 border border-red-500/20 px-4 py-2.5 rounded-xl cursor-pointer">Cerrar Sesión</button>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-[#1a1a1a] p-4 md:p-8 rounded-2xl md:rounded-3xl border border-gray-800 shadow-2xl space-y-5 mb-12">
-          {message && <div className={`p-3.5 rounded-xl text-[10px] font-medium break-words ${message.includes('Error') ? 'bg-red-500/10 border border-red-500/20 text-red-300' : 'bg-green-500/10 border border-green-500/20 text-green-300'}`}>{message}</div>}
+        {/* Selector de Pestañas */}
+        <div className="flex gap-2 border-b border-gray-800 mb-6">
+          <button 
+            onClick={() => switchTab('properties')} 
+            className={`text-[10px] font-extrabold uppercase tracking-widest px-5 py-3 cursor-pointer border-b-2 transition-all ${activeTab === 'properties' ? 'border-[#D4AF37] text-[#D4AF37]' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>
+            📦 Gestionar Terrenos
+          </button>
+          <button 
+            onClick={() => switchTab('clients')} 
+            className={`text-[10px] font-extrabold uppercase tracking-widest px-5 py-3 cursor-pointer border-b-2 transition-all ${activeTab === 'clients' ? 'border-[#D4AF37] text-[#D4AF37]' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>
+            👥 Clientes / Prospectos
+          </button>
+        </div>
 
+        {/* Contenido: Pestaña Terrenos */}
+        {activeTab === 'properties' && (
           <div>
-            <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Título de la Propiedad</label>
-            <input type="text" value={title} onChange={e => setTitle(e.target.value)} required className="w-full bg-[#111111] border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none" />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Medidas</label>
-              <input type="text" value={size} onChange={e => setSize(e.target.value)} required className="w-full bg-[#111111] border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none" />
-            </div>
-            <div>
-              <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Precio</label>
-              <input type="text" value={price} onChange={e => setPrice(e.target.value)} required className="w-full bg-[#111111] border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none" />
-            </div>
-          </div>
-
-          <div className="space-y-3 border border-gray-800 p-3.5 md:p-4 rounded-xl bg-black/20">
-            <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400">Galería de Imágenes (Hasta 3 fotos)</label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="flex flex-col items-center justify-center border border-dashed border-gray-700 p-3 rounded-xl h-36 bg-[#111111] w-full">
-                <label className="cursor-pointer text-[9px] font-extrabold uppercase tracking-wider text-black bg-[#D4AF37] px-3.5 py-2 rounded-xl hover:brightness-110 transition-all text-center w-full truncate">
-                  {imageUrl ? 'Cambiar Foto' : 'Subir Foto 1'}
-                  <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'img1')} className="hidden" />
-                </label>
-                {imageUrl && <img src={imageUrl} alt="preview" className="w-14 h-14 object-cover mt-2 rounded-lg border border-gray-700 flex-shrink-0" />}
+            <h2 className="text-sm font-bold text-white mb-4 font-serif">Tus Terrenos Publicados</h2>
+            {loadingProps ? (
+              <p className="text-xs text-gray-500 py-10 text-center">Cargando propiedades...</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {properties.map(p => (
+                  <div key={p.id} className="bg-[#1a1a1a] border border-gray-800 p-4 rounded-xl flex gap-3 items-center">
+                    <img src={p.image_url} alt="" className="w-16 h-16 object-cover rounded-lg flex-shrink-0" />
+                    <div className="overflow-hidden">
+                      <h4 className="text-xs font-bold text-white truncate">{p.title}</h4>
+                      <p className="text-[9px] text-gray-400 mt-0.5">{p.size}</p>
+                      <p className="text-[10px] font-black text-yellow-500 mt-1 font-mono">{p.price}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="flex flex-col items-center justify-center border border-dashed border-gray-700 p-3 rounded-xl h-36 bg-[#111111] w-full">
-                <label className="cursor-pointer text-[9px] font-extrabold uppercase tracking-wider text-black bg-[#D4AF37] px-3.5 py-2 rounded-xl hover:brightness-110 transition-all text-center w-full truncate">
-                  {imageUrl2 ? 'Cambiar Foto' : 'Subir Foto 2'}
-                  <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'img2')} className="hidden" />
-                </label>
-                {imageUrl2 && <img src={imageUrl2} alt="preview" className="w-14 h-14 object-cover mt-2 rounded-lg border border-gray-700 flex-shrink-0" />}
-              </div>
-              <div className="flex flex-col items-center justify-center border border-dashed border-gray-700 p-3 rounded-xl h-36 bg-[#111111] w-full">
-                <label className="cursor-pointer text-[9px] font-extrabold uppercase tracking-wider text-black bg-[#D4AF37] px-3.5 py-2 rounded-xl hover:brightness-110 transition-all text-center w-full truncate">
-                  {imageUrl3 ? 'Cambiar Foto' : 'Subir Foto 3'}
-                  <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'img3')} className="hidden" />
-                </label>
-                {imageUrl3 && <img src={imageUrl3} alt="preview" className="w-14 h-14 object-cover mt-2 rounded-lg border border-gray-700 flex-shrink-0" />}
-              </div>
-            </div>
+            )}
           </div>
+        )}
 
-          <div className="border border-gray-800 p-3.5 md:p-4 rounded-xl bg-black/20">
-            <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-2">Brochure / Archivo PDF</label>
-            <div className="flex flex-wrap items-center gap-3">
-              <label className="cursor-pointer bg-[#111111] border border-gray-800 text-white text-[9px] font-bold uppercase px-3.5 py-2.5 rounded-xl hover:border-yellow-500 transition-all">
-                Seleccionar PDF
-                <input type="file" accept="application/pdf" onChange={e => handleFileUpload(e, 'pdf')} className="hidden" />
-              </label>
-              {pdfUrl && <span className="text-[9px] text-green-400 font-semibold truncate max-w-[200px]">PDF Adjuntado Correctamente</span>}
-            </div>
-          </div>
-
+        {/* Contenido: Pestaña Clientes */}
+        {activeTab === 'clients' && (
           <div>
-            <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Descripción</label>
-            <textarea rows={3} value={description} onChange={e => setDescription(e.target.value)} className="w-full bg-[#111111] border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none" />
-          </div>
-
-          <div>
-            <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Estado</label>
-            <select value={status} onChange={e => setStatus(e.target.value)} className="w-full bg-[#111111] border border-gray-800 rounded-xl px-3.5 py-2 text-xs text-white h-10">
-              <option value="Disponible">Disponible</option>
-              <option value="Reservado">Reservado</option>
-              <option value="Vendido">Vendido</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
-            <button type="submit" disabled={uploading} className="w-full sm:flex-grow bg-gradient-to-r from-yellow-600 to-yellow-500 text-black font-extrabold py-3.5 rounded-xl shadow-xl disabled:opacity-50 cursor-pointer tracking-wider uppercase text-[10px]">{editingProp ? 'ACTUALIZAR PROPIEDAD' : 'AGREGAR PROPIEDAD'}</button>
-            {editingProp && <button type="button" onClick={resetForm} className="w-full sm:w-auto px-5 bg-gray-800 text-gray-300 text-[10px] font-bold uppercase rounded-xl hover:bg-gray-700 transition-all py-3.5 sm:py-0 cursor-pointer">Cancelar</button>}
-          </div>
-        </form>
-
-        <h2 className="text-base font-bold text-white mb-4 font-serif">Terrenos Publicados</h2>
-        <div className="space-y-3 pb-6">
-          {properties.map(prop => (
-            <div key={prop.id} className="bg-[#1a1a1a] border border-gray-800 p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3.5 min-w-0 overflow-hidden">
-                <img src={prop.image_url} alt="" className="w-12 h-12 object-cover rounded-xl border border-gray-800 flex-shrink-0" />
-                <div className="min-w-0 flex-grow">
-                  <h3 className="font-bold text-xs text-white truncate">{prop.title}</h3>
-                  <p className="text-[9px] text-gray-400 font-light mt-0.5 truncate">{prop.size} • <span className="text-yellow-500 font-medium">{prop.price}</span></p>
-                  <span className={`inline-block text-[7px] font-black uppercase px-2 py-0.5 rounded-full mt-1 border ${prop.status === 'Disponible' ? 'bg-green-500/20 text-green-400 border-green-500/20' : 'bg-red-500/20 text-red-400 border-red-500/20'}`}>{prop.status}</span>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-sm font-bold text-white font-serif">Lista de Prospectos (Leads)</h2>
+              <button onClick={loadClientes} className="text-[8px] font-bold uppercase tracking-wider bg-gray-800 text-gray-300 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-gray-700">Actualizar Lista</button>
+            </div>
+            
+            {loadingClients ? (
+              <p className="text-xs text-gray-500 py-10 text-center">Cargando prospectos...</p>
+            ) : clientes.length === 0 ? (
+              <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-10 text-center">
+                <p className="text-xs text-gray-500">Aún no hay clientes registrados en la base de datos.</p>
+                <p className="text-[9px] text-gray-600 mt-1">Aparecerán aquí en cuanto alguien llene sus datos en el catálogo.</p>
+              </div>
+            ) : (
+              <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-[10px]">
+                    <thead>
+                      <tr className="bg-black/40 text-gray-400 font-bold uppercase tracking-wider border-b border-gray-800">
+                        <th className="p-3.5">Fecha / Hora</th>
+                        <th className="p-3.5">Nombre</th>
+                        <th className="p-3.5">Teléfono / WhatsApp</th>
+                        <th className="p-3.5">Interés (Terreno)</th>
+                        <th className="p-3.5">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-800/50 text-white font-light">
+                      {clientes.map(c => (
+                        <tr key={c.id} className="hover:bg-white/5 transition-colors">
+                          <td className="p-3.5 text-gray-400 font-mono whitespace-nowrap">
+                            {new Date(c.created_at).toLocaleDateString()} {new Date(c.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          </td>
+                          <td className="p-3.5 font-semibold text-gray-200">{c.nombre}</td>
+                          <td className="p-3.5 font-medium text-yellow-400 font-mono tracking-wide whitespace-nowrap">{c.telefono}</td>
+                          <td className="p-3.5 text-gray-300 truncate max-w-xs">{c.terreno_interes}</td>
+                          <td className="p-3.5 whitespace-nowrap">
+                            <span className={`inline-block px-2 py-0.5 rounded-lg font-extrabold uppercase tracking-wider ${c.tipo_accion === 'PDF' ? 'bg-red-950/40 text-red-400 border border-red-500/20' : 'bg-green-950/40 text-green-400 border border-green-500/20'}`}>
+                              {c.tipo_accion}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-              <div className="flex gap-2 self-end sm:self-center flex-shrink-0">
-                <button onClick={() => handleEdit(prop)} className="text-[9px] font-extrabold uppercase bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 px-3.5 py-2 rounded-xl hover:bg-yellow-500/20 transition-all cursor-pointer">Editar</button>
-                <button onClick={() => handleDelete(prop.id)} className="text-[9px] font-extrabold uppercase bg-red-500/10 text-red-400 border border-red-500/20 px-3.5 py-2 rounded-xl hover:bg-red-500/20 transition-all cursor-pointer">Borrar</button>
-              </div>
-            </div>
-          ))}
-        </div>
+            )}
+          </div>
+        )}
+
       </div>
     </main>
   );

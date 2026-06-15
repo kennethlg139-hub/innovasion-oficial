@@ -28,7 +28,11 @@ export default function CatalogPage() {
   const [selectedProp, setSelectedProp] = useState<Property | null>(null);
   const [activeImg, setActiveImg] = useState<string>('');
 
-  const [pdfWarning, setPdfWarning] = useState<{ isOpen: boolean; propTitle: string }>({ isOpen: false, propTitle: '' });
+  // Estados para el formulario flotante de captura de leads
+  const [leadModal, setLeadModal] = useState<{ isOpen: boolean; action: 'WhatsApp' | 'PDF'; prop: Property | null }>({ isOpen: false, action: 'WhatsApp', prop: null });
+  const [nombre, setNombre] = useState('');
+  const [telefono, setTelefono] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -61,19 +65,46 @@ export default function CatalogPage() {
     setActiveImg(prop.image_url);
   };
 
-  const handlePdfDownload = (e: React.MouseEvent, prop: Property) => {
-    e.stopPropagation();
-    
-    if (!user && !isAdmin) {
-      setPdfWarning({ isOpen: true, propTitle: prop.title });
+  // Intercepta la acción para solicitar datos primero
+  const requestLeadData = (action: 'WhatsApp' | 'PDF', prop: Property) => {
+    // Si es admin, dejamos pasar directo sin pedir datos
+    if (isAdmin) {
+      if (action === 'PDF' && prop.pdf_url) window.open(prop.pdf_url, '_blank');
+      if (action === 'WhatsApp') window.open(`https://api.whatsapp.com/send?phone=${whatsappNumber}&text=Hola,%20me%20interesa%20esta%20propiedad:%20${prop.title}`, '_blank');
       return;
     }
+    setLeadModal({ isOpen: true, action, prop });
+  };
 
-    if (prop.pdf_url) {
-      window.open(prop.pdf_url, '_blank');
+  const handleLeadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!leadModal.prop) return;
+    setSubmitting(true);
+
+    // 1. Guardamos el lead en la nueva tabla pública 'clientes'
+    await supabase.from('clientes').insert([
+      {
+        nombre: nombre.trim(),
+        telefono: telefono.trim(),
+        terreno_interes: leadModal.prop.title,
+        tipo_accion: leadModal.prop.pdf_url && leadModal.modalAction === 'PDF' ? 'PDF' : 'WhatsApp'
+      }
+    ]);
+
+    setSubmitting(false);
+
+    // 2. Ejecutamos la acción original
+    if (leadModal.action === 'PDF' && leadModal.prop.pdf_url) {
+      window.open(leadModal.prop.pdf_url, '_blank');
     } else {
-      alert('Esta propiedad aún no tiene un archivo PDF adjunto.');
+      window.open(`https://api.whatsapp.com/send?phone=${whatsappNumber}&text=Hola,%20soy%20${encodeURIComponent(nombre)}%20con%20teléfono%20${encodeURIComponent(telefono)}%20y%20me%20interesa%20el%20terreno:%20${encodeURIComponent(leadModal.prop.title)}`, '_blank');
     }
+
+    // 3. Limpiamos y cerramos modal
+    setNombre('');
+    setTelefono('');
+    setLeadModal({ isOpen: false, action: 'WhatsApp', prop: null });
+    setSelectedProp(null); // Cierra la ficha técnica también para mayor fluidez
   };
 
   return (
@@ -84,11 +115,11 @@ export default function CatalogPage() {
 
       <div className="relative z-10 w-full">
         {/* Botón flotante de WhatsApp */}
-        <a href={`https://api.whatsapp.com/send?phone=${whatsappNumber}&text=Hola,%20me%20gustaría%20información%20sobre%20sus%20terrenos.`} target="_blank" rel="noopener noreferrer" className="fixed bottom-8 right-8 z-50 bg-[#25d366] w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all cursor-pointer">
-          <svg className="w-7 h-7 md:w-8 md:h-8 fill-white" viewBox="0 0 448 512"><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222.4 100-222.4 222.4 0 39.2 10.2 77.3 29.6 111L0 480l118.1-30.9c33.8 17.9 71.9 27.3 111 27.3h.1c122.4 0 222.4-100 222.4-222.4 0-59.3-23.1-115.1-65.1-157.1z"/></svg>
+        <a href={`https://api.whatsapp.com/send?phone=${whatsappNumber}&text=Hola,%20me%20gustaría%20información%20sobre%20sus%20terrenos.`} target="_blank" rel="noopener noreferrer" className="fixed bottom-6 right-6 z-50 bg-[#25d366] w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all cursor-pointer">
+          <svg className="w-6 h-6 md:w-8 md:h-8 fill-white" viewBox="0 0 448 512"><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222.4 100-222.4 222.4 0 39.2 10.2 77.3 29.6 111L0 480l118.1-30.9c33.8 17.9 71.9 27.3 111 27.3h.1c122.4 0 222.4-100 222.4-222.4 0-59.3-23.1-115.1-65.1-157.1z"/></svg>
         </a>
 
-      {/* Header estático responsivo ajustado para móviles */}
+        {/* Header estático responsivo */}
         <header className="border-b border-gray-800 bg-[#1a1a1a]/80 backdrop-blur-md sticky top-0 z-40 w-full">
           <div className="w-full max-w-6xl mx-auto px-3 h-20 md:h-24 flex items-center justify-between gap-2">
             <div className="flex items-center gap-3 py-1 flex-shrink-0">
@@ -120,32 +151,34 @@ export default function CatalogPage() {
           </div>
         </header>
 
-        <section className="px-4 pt-12 md:pt-16 pb-8 text-center w-full max-w-4xl mx-auto">
-          <h1 className="text-2xl md:text-5xl font-extrabold tracking-tight mb-3 text-white font-serif">Catálogo de Propiedades</h1>
-          <p className="text-gray-500 text-xs font-light tracking-wide">Presiona "Ver Terreno" para ver su Ficha Técnica, galería de fotos y descargar su PDF.</p>
+        {/* Sección de título */}
+        <section className="px-3 pt-8 md:pt-16 pb-6 text-center w-full max-w-4xl mx-auto">
+          <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight mb-2 text-white font-serif">Catálogo de Propiedades</h1>
+          <p className="text-gray-500 text-[10px] md:text-xs font-light tracking-wide max-w-sm md:max-w-none mx-auto">Presiona "Ver Terreno" para ver su Ficha Técnica, galería de fotos y descargar su brochure.</p>
         </section>
 
-        <section className="w-full max-w-6xl mx-auto px-4 pb-32">
+        {/* Cuadrícula de propiedades */}
+        <section className="w-full max-w-6xl mx-auto px-3 pb-24">
           {loading ? (
             <div className="flex justify-center py-20"><div className="w-8 h-8 border-t-yellow-500 border-2 rounded-full animate-spin"></div></div>
           ) : properties.length === 0 ? (
             <p className="text-xs text-gray-500 text-center py-10">No hay terrenos disponibles en este momento.</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {properties.map((prop) => (
                 <div key={prop.id} onClick={() => openFicha(prop)} className="bg-[#1a1a1a] rounded-2xl overflow-hidden border border-gray-800 flex flex-col cursor-pointer hover:border-yellow-500/50 transition-all duration-300 shadow-xl group w-full">
-                  <div className="h-56 relative overflow-hidden">
+                  <div className="h-48 sm:h-56 relative overflow-hidden">
                     <img src={prop.image_url} alt={prop.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    <span className={`absolute top-4 right-4 text-[9px] font-extrabold uppercase px-3 py-1 rounded-full tracking-wider ${prop.status === 'Disponible' ? 'bg-green-500/20 text-green-300 border border-green-500/30' : prop.status === 'Reservado' ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'}`}>{prop.status}</span>
+                    <span className={`absolute top-3 right-3 text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded-full tracking-wider ${prop.status === 'Disponible' ? 'bg-green-500/20 text-green-300 border border-green-500/30' : prop.status === 'Reservado' ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'}`}>{prop.status}</span>
                   </div>
-                  <div className="p-6 flex flex-col flex-grow justify-between">
+                  <div className="p-4 md:p-5 flex flex-col flex-grow justify-between">
                     <div>
-                      <h3 className="font-bold text-lg text-gray-100 mb-1 group-hover:text-yellow-500 transition-colors truncate">{prop.title}</h3>
-                      <p className="text-gray-400 text-xs mb-4 font-light tracking-wide">{prop.size}</p>
+                      <h3 className="font-bold text-base md:text-lg text-gray-100 mb-1 group-hover:text-yellow-500 transition-colors truncate">{prop.title}</h3>
+                      <p className="text-gray-400 text-[11px] mb-3 font-light tracking-wide">{prop.size}</p>
                     </div>
-                    <div className="pt-4 border-t border-gray-800 flex items-center justify-between">
-                      <span className="text-lg font-black text-yellow-500 font-mono tracking-tight">{prop.price}</span>
-                      <button onClick={(e) => { e.stopPropagation(); openFicha(prop); }} className="text-[9px] font-extrabold uppercase tracking-widest text-black bg-[#D4AF37] px-4 py-2.5 rounded-xl hover:brightness-110 transition-all border border-transparent cursor-pointer">Ver Terreno</button>
+                    <div className="pt-3 border-t border-gray-800/60 flex items-center justify-between">
+                      <span className="text-base md:text-lg font-black text-yellow-500 font-mono tracking-tight">{prop.price}</span>
+                      <button onClick={(e) => { e.stopPropagation(); openFicha(prop); }} className="text-[9px] font-extrabold uppercase tracking-widest text-black bg-[#D4AF37] px-3.5 py-2 rounded-xl hover:brightness-110 transition-all border border-transparent cursor-pointer flex-shrink-0">Ver Terreno</button>
                     </div>
                   </div>
                 </div>
@@ -157,15 +190,15 @@ export default function CatalogPage() {
 
       {/* MODAL DE FICHA TÉCNICA */}
       {selectedProp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="bg-[#141414] border border-gray-800 w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl max-h-[95vh] flex flex-col md:flex-row relative">
-            <button onClick={() => setSelectedProp(null)} className="absolute top-4 right-4 z-20 bg-black/60 hover:bg-black text-white w-9 h-9 rounded-full flex items-center justify-center border border-gray-700 text-xs font-black cursor-pointer">✕</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="bg-[#141414] border border-gray-800 w-full max-w-4xl rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl max-h-[95vh] flex flex-col md:flex-row relative">
+            <button onClick={() => setSelectedProp(null)} className="absolute top-3 right-3 z-20 bg-black/60 hover:bg-black text-white w-8 h-8 rounded-full flex items-center justify-center border border-gray-700 text-[10px] font-black cursor-pointer">✕</button>
 
-            <div className="w-full md:w-1/2 bg-black flex flex-col justify-between p-4 border-b md:border-b-0 md:border-r border-gray-800">
-              <div className="h-[240px] md:h-[350px] w-full rounded-2xl overflow-hidden mb-3 bg-[#1a1a1a]">
+            <div className="w-full md:w-1/2 bg-black flex flex-col justify-between p-3 border-b md:border-b-0 md:border-r border-gray-800 flex-shrink-0">
+              <div className="h-[200px] sm:h-[240px] md:h-[350px] w-full rounded-xl overflow-hidden mb-2 bg-[#1a1a1a]">
                 <img src={activeImg} alt="Vista ampliada" className="w-full h-full object-contain" />
               </div>
-              <div className="grid grid-cols-3 gap-2 h-16 md:h-20">
+              <div className="grid grid-cols-3 gap-2 h-12 sm:h-14 md:h-20 flex-shrink-0">
                 {selectedProp.image_url && (
                   <button onClick={() => setActiveImg(selectedProp.image_url)} className={`rounded-xl overflow-hidden border-2 h-full bg-[#111111] cursor-pointer ${activeImg === selectedProp.image_url ? 'border-yellow-500' : 'border-transparent'}`}>
                     <img src={selectedProp.image_url} alt="Foto 1" className="w-full h-full object-cover" />
@@ -184,52 +217,61 @@ export default function CatalogPage() {
               </div>
             </div>
 
-            <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col justify-between overflow-y-auto max-h-[50vh] md:max-h-[95vh]">
+            <div className="w-full md:w-1/2 p-4 sm:p-6 md:p-8 flex flex-col justify-between overflow-y-auto max-h-[48vh] md:max-h-[95vh]">
               <div>
-                <span className={`text-[9px] font-extrabold uppercase tracking-wider px-3 py-1 rounded-full border ${selectedProp.status === 'Disponible' ? 'bg-green-500/10 text-green-400 border-green-500/20' : selectedProp.status === 'Reservado' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>{selectedProp.status}</span>
-                <h2 className="text-xl md:text-2xl font-black text-white mt-3 mb-1 font-serif tracking-tight">{selectedProp.title}</h2>
-                <p className="text-[10px] font-light text-gray-500 tracking-wide mb-4 uppercase">Ficha Técnica</p>
+                <span className={`text-[8px] md:text-[9px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${selectedProp.status === 'Disponible' ? 'bg-green-500/10 text-green-400 border-green-500/20' : selectedProp.status === 'Reservado' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>{selectedProp.status}</span>
+                <h2 className="text-lg sm:text-xl md:text-2xl font-black text-white mt-2 mb-0.5 font-serif tracking-tight leading-snug break-words">{selectedProp.title}</h2>
+                <p className="text-[9px] font-light text-gray-500 tracking-wide mb-3 uppercase">Ficha Técnica</p>
                 
-                <div className="space-y-3 bg-[#1a1a1a] p-4 rounded-2xl border border-gray-800/80 mb-4">
+                <div className="space-y-2.5 bg-[#1a1a1a] p-3 rounded-xl border border-gray-800/80 mb-3">
                   <div className="flex justify-between items-center pb-2 border-b border-gray-800">
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">Medidas</span>
-                    <span className="text-xs font-semibold text-white tracking-wide">{selectedProp.size}</span>
+                    <span className="text-[8px] font-bold uppercase tracking-widest text-gray-400">Medidas</span>
+                    <span className="text-[11px] font-semibold text-white tracking-wide">{selectedProp.size}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">Precio</span>
-                    <span className="text-lg font-extrabold text-yellow-500 font-mono tracking-tight">{selectedProp.price}</span>
+                    <span className="text-[8px] font-bold uppercase tracking-widest text-gray-400">Precio</span>
+                    <span className="text-base font-extrabold text-yellow-500 font-mono tracking-tight">{selectedProp.price}</span>
                   </div>
                 </div>
 
-                <p className="text-xs text-gray-300 font-light leading-relaxed mb-4">
+                <p className="text-[11px] text-gray-300 font-light leading-relaxed mb-3">
                   {selectedProp.description || 'Lote de terreno urbanizado de alta plusvalía, ideal para construcción de vivienda o casa de descanso / chalet en la costa sur. Cuenta con excelente ubicación y accesibilidad.'}
                 </p>
               </div>
 
-              <div className="space-y-2.5 mt-auto pt-2">
-                <button onClick={(e) => handlePdfDownload(e, selectedProp)} className="w-full bg-white text-black font-extrabold text-xs py-3.5 rounded-xl border border-gray-700 shadow-lg hover:bg-gray-200 transition-all tracking-wider uppercase cursor-pointer">Descargar Brochure en PDF</button>
-                <a href={`https://api.whatsapp.com/send?phone=${whatsappNumber}&text=Hola,%20me%20interesa%20esta%20propiedad:%20${selectedProp.title}`} target="_blank" rel="noopener noreferrer" className="w-full bg-gradient-to-r from-[#D4AF37] to-[#C5A059] text-black font-extrabold text-xs py-3.5 rounded-xl shadow-lg hover:brightness-110 transition-all text-center tracking-wider uppercase block">Cotizar por WhatsApp</a>
+              <div className="space-y-2 mt-auto pt-1 flex-shrink-0">
+                <button onClick={() => requestLeadData('PDF', selectedProp)} className="w-full bg-white text-black font-extrabold text-[10px] py-3 rounded-xl border border-gray-700 shadow-lg hover:bg-gray-200 transition-all tracking-wider uppercase cursor-pointer">Descargar Brochure en PDF</button>
+                <button onClick={() => requestLeadData('WhatsApp', selectedProp)} className="w-full bg-gradient-to-r from-[#D4AF37] to-[#C5A059] text-black font-extrabold text-[10px] py-3 rounded-xl shadow-lg hover:brightness-110 transition-all tracking-wider uppercase cursor-pointer">Cotizar por WhatsApp</button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Aviso de inicio de sesión para PDFs */}
-      {pdfWarning.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="bg-[#1a1a1a] border border-gray-800 max-w-md w-full p-6 rounded-3xl shadow-2xl text-center">
-            <div className="w-14 h-14 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
-              <svg className="w-7 h-7 text-yellow-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m0 0v2m0-2h2m-2 0H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+      {/* MODAL RÁPIDO DE CAPTURA DE DATOS (LEADS) */}
+      {leadModal.isOpen && leadModal.prop && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="bg-[#1a1a1a] border border-gray-800 max-w-md w-full p-6 rounded-2xl shadow-2xl relative">
+            <button onClick={() => setLeadModal({ isOpen: false, action: 'WhatsApp', prop: null })} className="absolute top-4 right-4 text-gray-400 hover:text-white text-xs font-black cursor-pointer">✕</button>
+            
+            <div className="text-center mb-5">
+              <h3 className="text-sm font-extrabold text-white mb-1 font-serif tracking-tight">¡Último paso!</h3>
+              <p className="text-gray-400 text-[10px] leading-relaxed">Ingresa tus datos para continuar con tu solicitud sobre el terreno: <strong className="text-yellow-500">{leadModal.prop.title}</strong></p>
             </div>
-            <h3 className="text-base font-extrabold text-white mb-2 font-serif tracking-tight">¡Inicia sesión para descargar el PDF!</h3>
-            <p className="text-gray-400 text-xs mb-6 leading-relaxed">Para poder ver y descargar el brochure o PDF del terreno <strong className="text-yellow-500">{pdfWarning.propTitle}</strong>, por favor inicia sesión en tu cuenta.</p>
-            <div className="flex gap-3">
-              <a href="/login" className="flex-grow bg-[#D4AF37] text-black font-black py-3 rounded-xl text-xs uppercase tracking-wider hover:brightness-110 transition-all shadow-lg">Iniciar Sesión</a>
-              <button onClick={() => setPdfWarning({ isOpen: false, propTitle: '' })} className="px-4 bg-gray-800 text-gray-300 font-bold text-xs uppercase rounded-xl border border-gray-700 hover:bg-gray-700 transition-all cursor-pointer">Regresar</button>
-            </div>
+
+            <form onSubmit={handleLeadSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1">Nombre Completo</label>
+                <input type="text" value={nombre} onChange={e => setNombre(e.target.value)} required className="w-full bg-[#111111] border border-gray-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-yellow-500" />
+              </div>
+              <div>
+                <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1">Teléfono / WhatsApp</label>
+                <input type="tel" value={telefono} onChange={e => setTelefono(e.target.value)} required placeholder="Ej. 502 0000 0000" className="w-full bg-[#111111] border border-gray-800 rounded-xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-yellow-500" />
+              </div>
+              <button type="submit" disabled={submitting} className="w-full bg-gradient-to-r from-[#D4AF37] to-[#C5A059] text-black font-black py-3.5 rounded-xl shadow-lg hover:brightness-110 transition-all uppercase tracking-wider text-xs cursor-pointer disabled:opacity-70">
+                {submitting ? 'Procesando...' : leadModal.action === 'PDF' ? 'Descargar PDF' : 'Continuar a WhatsApp'}
+              </button>
+            </form>
           </div>
         </div>
       )}
