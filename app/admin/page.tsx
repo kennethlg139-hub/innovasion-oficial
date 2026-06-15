@@ -250,18 +250,27 @@ export default function AdminPage() {
           <div className="space-y-3 border border-gray-800 p-3.5 md:p-4 rounded-xl bg-black/20">
             <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400">Galería de Imágenes (Hasta 3 fotos)</label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {['img1', 'img2', 'img3'].map((imgType, idx) => {
-                const currentUrl = idx === 0 ? imageUrl : idx === 1 ? imageUrl2 : imageUrl3;
-                return (
-                  <div key={imgType} className="flex flex-col items-center justify-center border border-dashed border-gray-700 p-3 rounded-xl h-36 bg-[#111111] w-full">
-                    <label className="cursor-pointer text-[9px] font-extrabold uppercase tracking-wider text-black bg-[#D4AF37] px-3.5 py-2 rounded-xl hover:brightness-110 transition-all text-center w-full truncate">
-                      {currentUrl ? 'Cambiar Foto' : `Subir Foto ${idx + 1}`}
-                      <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, imgType as any)} className="hidden" />
-                    </label>
-                    {currentUrl && <img src={currentUrl} alt="preview" className="w-14 h-14 object-cover mt-2 rounded-lg border border-gray-700 flex-shrink-0" />}
-                  </div>
-                );
-              })}
+              <div className="flex flex-col items-center justify-center border border-dashed border-gray-700 p-3 rounded-xl h-36 bg-[#111111] w-full">
+                <label className="cursor-pointer text-[9px] font-extrabold uppercase tracking-wider text-black bg-[#D4AF37] px-3.5 py-2 rounded-xl hover:brightness-110 transition-all text-center w-full truncate">
+                  {imageUrl ? 'Cambiar Foto' : 'Subir Foto 1'}
+                  <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'img1')} className="hidden" />
+                </label>
+                {imageUrl && <img src={imageUrl} alt="preview" className="w-14 h-14 object-cover mt-2 rounded-lg border border-gray-700 flex-shrink-0" />}
+              </div>
+              <div className="flex flex-col items-center justify-center border border-dashed border-gray-700 p-3 rounded-xl h-36 bg-[#111111] w-full">
+                <label className="cursor-pointer text-[9px] font-extrabold uppercase tracking-wider text-black bg-[#D4AF37] px-3.5 py-2 rounded-xl hover:brightness-110 transition-all text-center w-full truncate">
+                  {imageUrl2 ? 'Cambiar Foto' : 'Subir Foto 2'}
+                  <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'img2')} className="hidden" />
+                </label>
+                {imageUrl2 && <img src={imageUrl2} alt="preview" className="w-14 h-14 object-cover mt-2 rounded-lg border border-gray-700 flex-shrink-0" />}
+              </div>
+              <div className="flex flex-col items-center justify-center border border-dashed border-gray-700 p-3 rounded-xl h-36 bg-[#111111] w-full">
+                <label className="cursor-pointer text-[9px] font-extrabold uppercase tracking-wider text-black bg-[#D4AF37] px-3.5 py-2 rounded-xl hover:brightness-110 transition-all text-center w-full truncate">
+                  {imageUrl3 ? 'Cambiar Foto' : 'Subir Foto 3'}
+                  <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'img3')} className="hidden" />
+                </label>
+                {imageUrl3 && <img src={imageUrl3} alt="preview" className="w-14 h-14 object-cover mt-2 rounded-lg border border-gray-700 flex-shrink-0" />}
+              </div>
             </div>
           </div>
 
