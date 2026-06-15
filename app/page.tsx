@@ -9,7 +9,7 @@ export default function HomePage() {
       </div>
 
       <div className="relative z-10 w-full flex-grow flex flex-col justify-between">
-        {/* Header Responsivo */}
+        {/* Header Responsivo con detección de administrador */}
         <header className="border-b border-gray-800 bg-[#1a1a1a]/80 backdrop-blur-md sticky top-0 z-40 w-full">
           <div className="w-full max-w-6xl mx-auto px-3 h-20 md:h-24 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 py-1 flex-shrink-0">
@@ -24,8 +24,17 @@ export default function HomePage() {
 
             <div className="flex items-center gap-1.5 md:gap-3 flex-shrink-0">
               <a href="/catalogo" className="text-[8px] md:text-xs font-semibold uppercase text-gray-300 border border-gray-700 px-2.5 py-1.5 rounded-xl bg-[#111111] tracking-wider hover:border-gray-500 transition-all">Catálogo</a>
-              <a href="/registro" className="text-[8px] md:text-xs font-semibold uppercase text-white bg-white/5 border border-white/10 px-2.5 py-1.5 rounded-xl tracking-wider hover:bg-white hover:text-black transition-all">Cuenta</a>
-              <a href="/login" className="text-[8px] md:text-xs font-black uppercase tracking-wider text-black bg-[#D4AF37] px-3.5 py-1.5 rounded-xl hover:brightness-110 transition-all">Acceder</a>
+              {typeof window !== 'undefined' && localStorage.getItem('admin_active_session') === 'true' ? (
+                <div className="flex items-center gap-1.5">
+                  <a href="/admin" className="text-[8px] md:text-[10px] font-extrabold uppercase text-black bg-[#D4AF37] px-2.5 py-1.5 rounded-xl">Admin</a>
+                  <button onClick={() => {
+                    localStorage.removeItem('admin_active_session');
+                    window.location.href = '/';
+                  }} className="text-[8px] md:text-[10px] font-extrabold text-red-400 border border-red-500/20 px-2.5 py-1.5 rounded-xl bg-red-950/10 cursor-pointer">Salir</button>
+                </div>
+              ) : (
+                <a href="/login" className="text-[8px] md:text-xs font-black uppercase tracking-wider text-black bg-[#D4AF37] px-3.5 py-1.5 rounded-xl hover:brightness-110 transition-all">Acceder</a>
+              )}
             </div>
           </div>
         </header>
