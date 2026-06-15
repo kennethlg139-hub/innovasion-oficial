@@ -184,26 +184,26 @@ export default function AdminPage() {
 
   if (!isLoggedIn) {
     return (
-      <main className="min-h-screen bg-[#121212] flex items-center justify-center p-4 relative w-full overflow-x-hidden">
+      <main className="min-h-screen bg-[#121212] flex items-center justify-center p-3 relative w-full overflow-x-hidden">
         <div className="fixed inset-0 z-0 flex items-center justify-center pointer-events-none opacity-[0.03]">
           <img src="/logo.png" alt="" className="w-[70%] max-w-[800px] object-contain grayscale" />
         </div>
-        <div className="w-full max-w-md bg-[#1a1a1a] p-6 md:p-8 rounded-3xl border border-gray-800 shadow-2xl relative z-10">
-          <div className="text-center mb-6">
-            <h1 className="text-xl font-black text-white tracking-tight font-serif">Acceso Exclusivo Admin</h1>
-            <p className="text-gray-400 text-xs mt-1 font-light">Ingresa tus credenciales.</p>
+        <div className="w-full max-w-md bg-[#1a1a1a] p-5 md:p-8 rounded-3xl border border-gray-800 shadow-2xl relative z-10 mx-2">
+          <div className="text-center mb-5">
+            <h1 className="text-lg sm:text-xl font-black text-white tracking-tight font-serif">Acceso Exclusivo Admin</h1>
+            <p className="text-gray-400 text-[10px] mt-1 font-light">Ingresa tus credenciales.</p>
           </div>
-          {authError && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-300 text-center font-medium">{authError}</div>}
+          {authError && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-[10px] text-red-300 text-center font-medium">{authError}</div>}
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Usuario (Email)</label>
-              <input type="email" value={username} onChange={e => setUsername(e.target.value)} required className="w-full bg-[#111111] border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-yellow-500" />
+              <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1">Usuario (Email)</label>
+              <input type="email" value={username} onChange={e => setUsername(e.target.value)} required className="w-full bg-[#111111] border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-yellow-500" />
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">PIN de Acceso</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full bg-[#111111] border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-yellow-500" />
+              <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1">PIN de Acceso</label>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full bg-[#111111] border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-yellow-500" />
             </div>
-            <button type="submit" className="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 text-black font-extrabold py-4 rounded-xl transition-all shadow-xl hover:brightness-110 mt-2 cursor-pointer">ACCEDER AL PANEL</button>
+            <button type="submit" className="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 text-black font-extrabold py-3.5 rounded-xl transition-all shadow-xl hover:brightness-110 mt-3 cursor-pointer text-xs tracking-wide uppercase">ACCEDER AL PANEL</button>
           </form>
         </div>
       </main>
@@ -211,106 +211,106 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#121212] text-gray-200 antialiased py-8 px-4 md:py-12 md:px-6 relative w-full overflow-x-hidden">
+    <main className="min-h-screen bg-[#121212] text-gray-200 antialiased py-6 px-3 md:py-12 md:px-6 relative w-full overflow-x-hidden">
       <div className="fixed inset-0 z-0 flex items-center justify-center pointer-events-none opacity-[0.03]">
         <img src="/logo.png" alt="" className="w-[70%] max-w-[800px] object-contain grayscale" />
       </div>
 
       <div className="w-full max-w-3xl mx-auto relative z-10">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-800 pb-6 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800 pb-5 mb-6">
           <div>
-            <h1 className="text-2xl font-black text-white font-serif">{editingProp ? 'Editar Propiedad' : 'Panel de Administración'}</h1>
-            <p className="text-gray-400 text-xs mt-1 font-light">{editingProp ? 'Modifica los datos del terreno.' : 'Agrega, edita o elimina propiedades.'}</p>
+            <h1 className="text-xl sm:text-2xl font-black text-white font-serif leading-tight">{editingProp ? 'Editar Propiedad' : 'Panel de Administración'}</h1>
+            <p className="text-gray-400 text-[10px] mt-0.5 font-light">{editingProp ? 'Modifica los datos del terreno.' : 'Agrega, edita o elimina propiedades.'}</p>
           </div>
-          <div className="flex items-center gap-3 self-end md:self-center">
-            <a href="/catalogo" className="text-xs font-semibold uppercase text-gray-400 border border-gray-700 px-4 py-2 rounded-xl bg-[#1a1a1a]">Ver Catálogo</a>
-            <button onClick={handleLogout} className="text-xs font-semibold uppercase text-red-400 border border-red-900 px-4 py-2 rounded-xl bg-red-950/20 cursor-pointer">Salir</button>
+          <div className="flex items-center gap-2.5 self-end sm:self-center flex-shrink-0">
+            <a href="/catalogo" className="text-[10px] font-semibold uppercase text-gray-400 border border-gray-700 px-3 py-2 rounded-xl bg-[#1a1a1a]">Ver Catálogo</a>
+            <button onClick={handleLogout} className="text-[10px] font-semibold uppercase text-red-400 border border-red-900 px-3 py-2 rounded-xl bg-red-950/20 cursor-pointer">Salir</button>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-[#1a1a1a] p-6 md:p-8 rounded-3xl border border-gray-800 shadow-2xl space-y-6 mb-16">
-          {message && <div className={`p-4 rounded-xl text-xs font-medium ${message.includes('Error') ? 'bg-red-500/10 border border-red-500/20 text-red-300' : 'bg-green-500/10 border border-green-500/20 text-green-300'}`}>{message}</div>}
+        <form onSubmit={handleSubmit} className="bg-[#1a1a1a] p-4 md:p-8 rounded-2xl md:rounded-3xl border border-gray-800 shadow-2xl space-y-5 mb-12">
+          {message && <div className={`p-3.5 rounded-xl text-[10px] font-medium break-words ${message.includes('Error') ? 'bg-red-500/10 border border-red-500/20 text-red-300' : 'bg-green-500/10 border border-green-500/20 text-green-300'}`}>{message}</div>}
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Título de la Propiedad</label>
-            <input type="text" value={title} onChange={e => setTitle(e.target.value)} required className="w-full bg-[#111111] border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none" />
+            <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Título de la Propiedad</label>
+            <input type="text" value={title} onChange={e => setTitle(e.target.value)} required className="w-full bg-[#111111] border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none" />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Medidas</label>
-              <input type="text" value={size} onChange={e => setSize(e.target.value)} required className="w-full bg-[#111111] border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none" />
+              <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Medidas</label>
+              <input type="text" value={size} onChange={e => setSize(e.target.value)} required className="w-full bg-[#111111] border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none" />
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Precio</label>
-              <input type="text" value={price} onChange={e => setPrice(e.target.value)} required className="w-full bg-[#111111] border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none" />
+              <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Precio</label>
+              <input type="text" value={price} onChange={e => setPrice(e.target.value)} required className="w-full bg-[#111111] border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none" />
             </div>
           </div>
 
-          <div className="space-y-4 border border-gray-800 p-4 md:p-5 rounded-2xl bg-black/20">
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-400">Galería de Imágenes (Hasta 3 fotos)</label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="space-y-3 border border-gray-800 p-3.5 md:p-4 rounded-xl bg-black/20">
+            <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400">Galería de Imágenes (Hasta 3 fotos)</label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {['img1', 'img2', 'img3'].map((imgType, idx) => {
                 const currentUrl = idx === 0 ? imageUrl : idx === 1 ? imageUrl2 : imageUrl3;
                 return (
-                  <div key={imgType} className="flex flex-col items-center justify-center border border-dashed border-gray-700 p-3 rounded-xl h-40 bg-[#111111]">
-                    <label className="cursor-pointer text-[9px] font-extrabold uppercase tracking-wider text-black bg-[#D4AF37] px-4 py-2.5 rounded-xl hover:brightness-110 transition-all text-center">
+                  <div key={imgType} className="flex flex-col items-center justify-center border border-dashed border-gray-700 p-3 rounded-xl h-36 bg-[#111111] w-full">
+                    <label className="cursor-pointer text-[9px] font-extrabold uppercase tracking-wider text-black bg-[#D4AF37] px-3.5 py-2 rounded-xl hover:brightness-110 transition-all text-center w-full truncate">
                       {currentUrl ? 'Cambiar Foto' : `Subir Foto ${idx + 1}`}
                       <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, imgType as any)} className="hidden" />
                     </label>
-                    {currentUrl && <img src={currentUrl} alt="preview" className="w-20 h-20 object-cover mt-2 rounded-lg border border-gray-700" />}
+                    {currentUrl && <img src={currentUrl} alt="preview" className="w-14 h-14 object-cover mt-2 rounded-lg border border-gray-700 flex-shrink-0" />}
                   </div>
                 );
               })}
             </div>
           </div>
 
-          <div className="border border-gray-800 p-4 md:p-5 rounded-2xl bg-black/20">
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Brochure / Archivo PDF</label>
-            <div className="flex flex-wrap items-center gap-4">
-              <label className="cursor-pointer bg-[#111111] border border-gray-800 text-white text-[10px] font-bold uppercase px-4 py-3 rounded-xl hover:border-yellow-500 transition-all">
+          <div className="border border-gray-800 p-3.5 md:p-4 rounded-xl bg-black/20">
+            <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-2">Brochure / Archivo PDF</label>
+            <div className="flex flex-wrap items-center gap-3">
+              <label className="cursor-pointer bg-[#111111] border border-gray-800 text-white text-[9px] font-bold uppercase px-3.5 py-2.5 rounded-xl hover:border-yellow-500 transition-all">
                 Seleccionar PDF
                 <input type="file" accept="application/pdf" onChange={e => handleFileUpload(e, 'pdf')} className="hidden" />
               </label>
-              {pdfUrl && <span className="text-[10px] text-green-400 font-semibold truncate max-w-[250px]">PDF Adjuntado Correctamente</span>}
+              {pdfUrl && <span className="text-[9px] text-green-400 font-semibold truncate max-w-[200px]">PDF Adjuntado Correctamente</span>}
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Descripción</label>
-            <textarea rows={3} value={description} onChange={e => setDescription(e.target.value)} className="w-full bg-[#111111] border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none" />
+            <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Descripción</label>
+            <textarea rows={3} value={description} onChange={e => setDescription(e.target.value)} className="w-full bg-[#111111] border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none" />
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Estado</label>
-            <select value={status} onChange={e => setStatus(e.target.value)} className="w-full bg-[#111111] border border-gray-800 rounded-xl px-4 py-3 text-sm text-white h-[46px]">
+            <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Estado</label>
+            <select value={status} onChange={e => setStatus(e.target.value)} className="w-full bg-[#111111] border border-gray-800 rounded-xl px-3.5 py-2 text-xs text-white h-10">
               <option value="Disponible">Disponible</option>
               <option value="Reservado">Reservado</option>
               <option value="Vendido">Vendido</option>
             </select>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button type="submit" disabled={uploading} className="w-full sm:flex-grow bg-gradient-to-r from-yellow-600 to-yellow-500 text-black font-extrabold py-4 rounded-xl shadow-xl disabled:opacity-50 cursor-pointer tracking-wider uppercase text-xs">{editingProp ? 'ACTUALIZAR PROPIEDAD' : 'AGREGAR PROPIEDAD'}</button>
-            {editingProp && <button type="button" onClick={resetForm} className="w-full sm:w-auto px-6 bg-gray-800 text-gray-300 text-xs font-bold uppercase rounded-xl hover:bg-gray-700 transition-all py-4 sm:py-0 cursor-pointer">Cancelar</button>}
+          <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
+            <button type="submit" disabled={uploading} className="w-full sm:flex-grow bg-gradient-to-r from-yellow-600 to-yellow-500 text-black font-extrabold py-3.5 rounded-xl shadow-xl disabled:opacity-50 cursor-pointer tracking-wider uppercase text-[10px]">{editingProp ? 'ACTUALIZAR PROPIEDAD' : 'AGREGAR PROPIEDAD'}</button>
+            {editingProp && <button type="button" onClick={resetForm} className="w-full sm:w-auto px-5 bg-gray-800 text-gray-300 text-[10px] font-bold uppercase rounded-xl hover:bg-gray-700 transition-all py-3.5 sm:py-0 cursor-pointer">Cancelar</button>}
           </div>
         </form>
 
-        <h2 className="text-lg font-bold text-white mb-6 font-serif">Terrenos Publicados</h2>
-        <div className="space-y-4">
+        <h2 className="text-base font-bold text-white mb-4 font-serif">Terrenos Publicados</h2>
+        <div className="space-y-3 pb-6">
           {properties.map(prop => (
-            <div key={prop.id} className="bg-[#1a1a1a] border border-gray-800 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <img src={prop.image_url} alt="" className="w-16 h-16 object-cover rounded-xl border border-gray-800 flex-shrink-0" />
-                <div>
-                  <h3 className="font-bold text-sm text-white truncate max-w-[180px] sm:max-w-none">{prop.title}</h3>
-                  <p className="text-[10px] text-gray-400 font-light mt-0.5">{prop.size} • <span className="text-yellow-500 font-medium">{prop.price}</span></p>
-                  <span className={`inline-block text-[8px] font-black uppercase px-2 py-0.5 rounded-full mt-1.5 border ${prop.status === 'Disponible' ? 'bg-green-500/20 text-green-400 border-green-500/20' : 'bg-red-500/20 text-red-400 border-red-500/20'}`}>{prop.status}</span>
+            <div key={prop.id} className="bg-[#1a1a1a] border border-gray-800 p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3.5 min-w-0 overflow-hidden">
+                <img src={prop.image_url} alt="" className="w-12 h-12 object-cover rounded-xl border border-gray-800 flex-shrink-0" />
+                <div className="min-w-0 flex-grow">
+                  <h3 className="font-bold text-xs text-white truncate">{prop.title}</h3>
+                  <p className="text-[9px] text-gray-400 font-light mt-0.5 truncate">{prop.size} • <span className="text-yellow-500 font-medium">{prop.price}</span></p>
+                  <span className={`inline-block text-[7px] font-black uppercase px-2 py-0.5 rounded-full mt-1 border ${prop.status === 'Disponible' ? 'bg-green-500/20 text-green-400 border-green-500/20' : 'bg-red-500/20 text-red-400 border-red-500/20'}`}>{prop.status}</span>
                 </div>
               </div>
-              <div className="flex gap-2 self-end sm:self-center">
-                <button onClick={() => handleEdit(prop)} className="text-[9px] font-extrabold uppercase bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 px-4 py-2.5 rounded-xl hover:bg-yellow-500/20 transition-all cursor-pointer">Editar</button>
-                <button onClick={() => handleDelete(prop.id)} className="text-[9px] font-extrabold uppercase bg-red-500/10 text-red-400 border border-red-500/20 px-4 py-2.5 rounded-xl hover:bg-red-500/20 transition-all cursor-pointer">Borrar</button>
+              <div className="flex gap-2 self-end sm:self-center flex-shrink-0">
+                <button onClick={() => handleEdit(prop)} className="text-[9px] font-extrabold uppercase bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 px-3.5 py-2 rounded-xl hover:bg-yellow-500/20 transition-all cursor-pointer">Editar</button>
+                <button onClick={() => handleDelete(prop.id)} className="text-[9px] font-extrabold uppercase bg-red-500/10 text-red-400 border border-red-500/20 px-3.5 py-2 rounded-xl hover:bg-red-500/20 transition-all cursor-pointer">Borrar</button>
               </div>
             </div>
           ))}

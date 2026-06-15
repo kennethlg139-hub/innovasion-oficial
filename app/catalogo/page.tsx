@@ -88,33 +88,33 @@ export default function CatalogPage() {
           <svg className="w-7 h-7 md:w-8 md:h-8 fill-white" viewBox="0 0 448 512"><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222.4 100-222.4 222.4 0 39.2 10.2 77.3 29.6 111L0 480l118.1-30.9c33.8 17.9 71.9 27.3 111 27.3h.1c122.4 0 222.4-100 222.4-222.4 0-59.3-23.1-115.1-65.1-157.1z"/></svg>
         </a>
 
-        {/* Header estático responsivo MD+ */}
+      {/* Header estático responsivo ajustado para móviles */}
         <header className="border-b border-gray-800 bg-[#1a1a1a]/80 backdrop-blur-md sticky top-0 z-40 w-full">
-          <div className="w-full max-w-6xl mx-auto px-4 h-24 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4 py-2">
-              <img src="/logo.png" alt="Logo" className="h-14 w-14 object-contain" />
+          <div className="w-full max-w-6xl mx-auto px-3 h-20 md:h-24 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3 py-1 flex-shrink-0">
+              <img src="/logo.png" alt="Logo" className="h-10 w-10 md:h-14 md:w-14 object-contain" />
               <div className="flex flex-col justify-center">
-                <h1 className="text-2xl md:text-3xl font-black tracking-tight leading-none flex font-serif text-[#E5E4E2]">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight leading-none font-serif text-[#E5E4E2]">
                   INNOVASIÓN
                 </h1>
-                <span className="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] mt-1 opacity-80">Asesor Inmobiliario</span>
+                <span className="text-[8px] md:text-[10px] text-gray-400 font-bold uppercase tracking-[0.15em] mt-0.5 opacity-80">Asesor Inmobiliario</span>
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
-              <a href="/" className="text-[9px] md:text-xs font-semibold uppercase text-gray-400 border border-gray-700 px-3 py-2 rounded-xl bg-[#111111]">Inicio</a>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <a href="/" className="text-[8px] md:text-xs font-semibold uppercase text-gray-400 border border-gray-700 px-2.5 py-1.5 rounded-xl bg-[#111111]">Inicio</a>
               {isAdmin ? (
-                <div className="flex items-center gap-2">
-                  <a href="/admin" className="text-[9px] md:text-[10px] font-extrabold uppercase text-black bg-[#D4AF37] px-3 py-2 rounded-xl">Admin</a>
-                  <button onClick={handleLogout} className="text-[9px] md:text-[10px] font-extrabold text-red-400 border border-red-500/20 px-3 py-2 rounded-xl bg-red-950/10 cursor-pointer">Salir</button>
+                <div className="flex items-center gap-1.5">
+                  <a href="/admin" className="text-[8px] md:text-[10px] font-extrabold uppercase text-black bg-[#D4AF37] px-2.5 py-1.5 rounded-xl">Admin</a>
+                  <button onClick={handleLogout} className="text-[8px] md:text-[10px] font-extrabold text-red-400 border border-red-500/20 px-2.5 py-1.5 rounded-xl bg-red-950/10 cursor-pointer">Salir</button>
                 </div>
               ) : user ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold uppercase text-gray-300 truncate hidden sm:inline">¡Hola!</span>
-                  <button onClick={handleLogout} className="text-[9px] md:text-[10px] font-extrabold uppercase text-white border border-white/10 px-3 py-2 rounded-xl bg-white/5 cursor-pointer">Salir</button>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9px] font-bold uppercase text-gray-300 truncate hidden sm:inline">¡Hola!</span>
+                  <button onClick={handleLogout} className="text-[8px] md:text-[10px] font-extrabold uppercase text-white border border-white/10 px-2.5 py-1.5 rounded-xl bg-white/5 cursor-pointer">Salir</button>
                 </div>
               ) : (
-                <a href="/login" className="text-[9px] md:text-xs font-semibold uppercase tracking-wider text-black bg-[#D4AF37] px-3 py-2 rounded-xl">Acceder</a>
+                <a href="/login" className="text-[8px] md:text-xs font-semibold uppercase tracking-wider text-black bg-[#D4AF37] px-2.5 py-1.5 rounded-xl">Acceder</a>
               )}
             </div>
           </div>

@@ -15,7 +15,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Innovasión - Asesor Inmobiliario',
   description: 'Inversiones inmobiliarias en la costa que trascienden',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
@@ -24,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="h-full">
+    <html lang="es" className="h-full scroll-smooth">
       <body className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-[#121212] text-gray-200 antialiased flex flex-col w-full overflow-x-hidden`}>
         {children}
       </body>
