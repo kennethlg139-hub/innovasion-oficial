@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Innovasión - Asesor Inmobiliario',
   description: 'Inversiones inmobiliarias en la costa que trascienden',
+  manifest: '/manifest.json',
 };
 
 export const viewport = {

@@ -3,8 +3,12 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient('https://jovcdrplavvsfxrgaqle.supabase.co', 'sb_publishable_LvLvFMyl2bI4TLezUnUXLg_kUsD0cou');
-const whatsappNumber = '50243752875';
+// Credenciales de tu proyecto Supabase
+const supabaseUrl = 'https://jovcdrplavvsfxrgaqle.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvdmNkcnBsYXZ2c2Z4cmdhcWxlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyOTEwNzksImV4cCI6MjA5Njg2NzA3OX0.cx1r9JtzBXkySrN73DMoZl7bg1cyMH-NzP3H09QVH1s';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+const whatsappNumber = '50245413470';
 
 type Property = { 
   id: number; 
@@ -17,19 +21,20 @@ type Property = {
   image_url_3?: string;
   pdf_url?: string;
   description?: string;
+  location_url?: string;
 };
 
 export default function CatalogPage() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   
+  // Ficha técnica (Modal)
   const [selectedProp, setSelectedProp] = useState<Property | null>(null);
   const [activeImg, setActiveImg] = useState<string>('');
 
-  // Estados para el formulario flotante de captura de leads
-  const [leadModal, setLeadModal] = useState<{ isOpen: boolean; action: 'WhatsApp' | 'PDF'; prop: Property | null }>({ isOpen: false, action: 'WhatsApp', prop: null });
+  // Captura de datos (Leads One-Tap)
+  const [leadModal, setLeadModal] = useState<{ isOpen: boolean; action: 'WhatsApp' | 'PDF' | 'Ubicación'; prop: Property | null }>({ isOpen: false, action: 'WhatsApp', prop: null });
   const [nombre, setNombre] = useState('');
   const [telefono, setTelefono] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -40,40 +45,75 @@ export default function CatalogPage() {
       setProperties(data || []);
       setLoading(false);
       
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user || null);
       if (localStorage.getItem('admin_active_session') === 'true') {
         setIsAdmin(true);
       }
+
+      // Recuperar datos si ya están en memoria local
+      if (typeof window !== 'undefined') {
+        const savedName = localStorage.getItem('lead_name');
+        const savedPhone = localStorage.getItem('lead_phone');
+        if (savedName) setNombre(savedName);
+        if (savedPhone) setTelefono(savedPhone);
+      }
     };
     load();
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
-    });
-    return () => subscription.unsubscribe();
   }, []);
-
-  const handleLogout = async () => {
-    localStorage.removeItem('admin_active_session');
-    if (user) await supabase.auth.signOut();
-    window.location.href = '/';
-  };
 
   const openFicha = (prop: Property) => {
     setSelectedProp(prop);
     setActiveImg(prop.image_url);
   };
 
-  // Intercepta la acción para solicitar datos primero
-  const requestLeadData = (action: 'WhatsApp' | 'PDF', prop: Property) => {
-    // Si es admin, dejamos pasar directo sin pedir datos
-    if (isAdmin) {
-      if (action === 'PDF' && prop.pdf_url) window.open(prop.pdf_url, '_blank');
-      if (action === 'WhatsApp') window.open(`https://api.whatsapp.com/send?phone=${whatsappNumber}&text=Hola,%20me%20interesa%20esta%20propiedad:%20${prop.title}`, '_blank');
-      return;
+  const saveLeadSupabase = async (propTitle: string, action: string) => {
+    if (isAdmin) return;
+    await supabase.from('clientes').insert([
+      {
+        nombre: nombre.trim(),
+        telefono: telefono.trim(),
+        terreno_interes: propTitle,
+        tipo_accion: action,
+        estado: 'Pendiente'
+      }
+    ]);
+  };
+
+  // Procesamiento inteligente de acciones
+  const processAction = async (action: 'WhatsApp' | 'PDF' | 'Ubicación', prop: Property) => {
+    // Registramos en segundo plano
+    await saveLeadRecordAndRemember(prop.title, action);
+
+    if (action === 'PDF' && prop.pdf_url) {
+      window.open(prop.pdf_url, '_blank');
+    } else if (action === 'WhatsApp') {
+      const mensajeWpp = `Hola, me interesa el terreno: ${prop.title} (${prop.price}). Mi nombre es ${nombre}.`;
+      window.open(`https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodeURIComponent(mensajeWpp)}`, '_blank');
+    } else if (action === 'Ubicación' && prop.location_url) {
+      window.open(prop.location_url, '_blank');
     }
-    setLeadModal({ isOpen: true, action, prop });
+    
+    // Cierra modal de ficha al completar interacción externa
+    setLeadModal({ isOpen: false, action: 'WhatsApp', prop: null });
+    setSelectedProp(null);
+  };
+
+  const saveLeadRecordAndRemember = async (propTitle: string, action: 'WhatsApp' | 'PDF' | 'Ubicación') => {
+    if (isAdmin) return;
+    if (nombre && telefono) {
+      localStorage.setItem('lead_name', nombre);
+      localStorage.setItem('lead_phone', telefono);
+      await saveLeadSupabase(propTitle, action);
+    }
+  };
+
+  const requestAction = (action: 'WhatsApp' | 'PDF' | 'Ubicación', prop: Property) => {
+    // Si es Admin o si el usuario ya dejó sus datos en el localStorage, pasa directo
+    if (isAdmin || (localStorage.getItem('lead_name') && localStorage.getItem('lead_phone'))) {
+      processAction(action, prop);
+    } else {
+      // Primera vez: requiere llenar datos
+      setLeadModal({ isOpen: true, action, prop });
+    }
   };
 
   const handleLeadSubmit = async (e: React.FormEvent) => {
@@ -81,30 +121,15 @@ export default function CatalogPage() {
     if (!leadModal.prop) return;
     setSubmitting(true);
 
-    // 1. Guardamos el lead en la nueva tabla pública 'clientes'
-    await supabase.from('clientes').insert([
-      {
-        nombre: nombre.trim(),
-        telefono: telefono.trim(),
-        terreno_interes: leadModal.prop.title,
-        tipo_accion: leadModal.prop.pdf_url && leadModal.modalAction === 'PDF' ? 'PDF' : 'WhatsApp'
-      }
-    ]);
+    // Guardamos en localStorage y enviamos a bd
+    localStorage.setItem('lead_name', nombre);
+    localStorage.setItem('lead_phone', telefono);
+    await saveLeadSupabase(leadModal.prop.title, leadModal.leadAction || leadModal.action);
 
     setSubmitting(false);
 
-    // 2. Ejecutamos la acción original
-    if (leadModal.action === 'PDF' && leadModal.prop.pdf_url) {
-      window.open(leadModal.prop.pdf_url, '_blank');
-    } else {
-      window.open(`https://api.whatsapp.com/send?phone=${whatsappNumber}&text=Hola,%20soy%20${encodeURIComponent(nombre)}%20con%20teléfono%20${encodeURIComponent(telefono)}%20y%20me%20interesa%20el%20terreno:%20${encodeURIComponent(leadModal.prop.title)}`, '_blank');
-    }
-
-    // 3. Limpiamos y cerramos modal
-    setNombre('');
-    setTelefono('');
-    setLeadModal({ isOpen: false, action: 'WhatsApp', prop: null });
-    setSelectedProp(null); // Cierra la ficha técnica también para mayor fluidez
+    // Ejecutamos acción
+    processAction(leadModal.action, leadModal.prop);
   };
 
   return (
@@ -114,11 +139,6 @@ export default function CatalogPage() {
       </div>
 
       <div className="relative z-10 w-full">
-        {/* Botón flotante de WhatsApp */}
-        <a href={`https://api.whatsapp.com/send?phone=${whatsappNumber}&text=Hola,%20me%20gustaría%20información%20sobre%20sus%20terrenos.`} target="_blank" rel="noopener noreferrer" className="fixed bottom-6 right-6 z-50 bg-[#25d366] w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all cursor-pointer">
-          <svg className="w-6 h-6 md:w-8 md:h-8 fill-white" viewBox="0 0 448 512"><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222.4 100-222.4 222.4 0 39.2 10.2 77.3 29.6 111L0 480l118.1-30.9c33.8 17.9 71.9 27.3 111 27.3h.1c122.4 0 222.4-100 222.4-222.4 0-59.3-23.1-115.1-65.1-157.1z"/></svg>
-        </a>
-
         {/* Header estático responsivo */}
         <header className="border-b border-gray-800 bg-[#1a1a1a]/80 backdrop-blur-md sticky top-0 z-40 w-full">
           <div className="w-full max-w-6xl mx-auto px-3 h-20 md:h-24 flex items-center justify-between gap-2">
@@ -134,30 +154,20 @@ export default function CatalogPage() {
             
             <div className="flex items-center gap-2 flex-shrink-0">
               <a href="/" className="text-[8px] md:text-xs font-semibold uppercase text-gray-400 border border-gray-700 px-2.5 py-1.5 rounded-xl bg-[#111111]">Inicio</a>
-              {isAdmin ? (
-                <div className="flex items-center gap-1.5">
-                  <a href="/admin" className="text-[8px] md:text-[10px] font-extrabold uppercase text-black bg-[#D4AF37] px-2.5 py-1.5 rounded-xl">Admin</a>
-                  <button onClick={handleLogout} className="text-[8px] md:text-[10px] font-extrabold text-red-400 border border-red-500/20 px-2.5 py-1.5 rounded-xl bg-red-950/10 cursor-pointer">Salir</button>
-                </div>
-              ) : user ? (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[9px] font-bold uppercase text-gray-300 truncate hidden sm:inline">¡Hola!</span>
-                  <button onClick={handleLogout} className="text-[8px] md:text-[10px] font-extrabold uppercase text-white border border-white/10 px-2.5 py-1.5 rounded-xl bg-white/5 cursor-pointer">Salir</button>
-                </div>
-              ) : (
-                <a href="/login" className="text-[8px] md:text-xs font-semibold uppercase tracking-wider text-black bg-[#D4AF37] px-2.5 py-1.5 rounded-xl">Acceder</a>
+              {isAdmin && (
+                <a href="/admin" className="text-[8px] md:text-[10px] font-extrabold uppercase text-black bg-[#D4AF37] px-2.5 py-1.5 rounded-xl">Admin</a>
               )}
             </div>
           </div>
         </header>
 
-        {/* Sección de título */}
+        {/* Título de sección */}
         <section className="px-3 pt-8 md:pt-16 pb-6 text-center w-full max-w-4xl mx-auto">
           <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight mb-2 text-white font-serif">Catálogo de Propiedades</h1>
-          <p className="text-gray-500 text-[10px] md:text-xs font-light tracking-wide max-w-sm md:max-w-none mx-auto">Presiona "Ver Terreno" para ver su Ficha Técnica, galería de fotos y descargar su brochure.</p>
+          <p className="text-gray-500 text-[10px] md:text-xs font-light tracking-wide max-w-sm md:max-w-none mx-auto">Presiona "Ver Terreno" para ver la Ficha Técnica, galería de fotos, ubicación y solicitar información.</p>
         </section>
 
-        {/* Cuadrícula de propiedades */}
+        {/* Cuadrícula de propiedades (Aspecto limpio) */}
         <section className="w-full max-w-6xl mx-auto px-3 pb-24">
           {loading ? (
             <div className="flex justify-center py-20"><div className="w-8 h-8 border-t-yellow-500 border-2 rounded-full animate-spin"></div></div>
@@ -166,19 +176,19 @@ export default function CatalogPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {properties.map((prop) => (
-                <div key={prop.id} onClick={() => openFicha(prop)} className="bg-[#1a1a1a] rounded-2xl overflow-hidden border border-gray-800 flex flex-col cursor-pointer hover:border-yellow-500/50 transition-all duration-300 shadow-xl group w-full">
+                <div key={prop.id} className="bg-[#1a1a1a] rounded-2xl overflow-hidden border border-gray-800 flex flex-col shadow-xl w-full">
                   <div className="h-48 sm:h-56 relative overflow-hidden">
-                    <img src={prop.image_url} alt={prop.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <img src={prop.image_url} alt={prop.title} className="w-full h-full object-cover" />
                     <span className={`absolute top-3 right-3 text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded-full tracking-wider ${prop.status === 'Disponible' ? 'bg-green-500/20 text-green-300 border border-green-500/30' : prop.status === 'Reservado' ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'}`}>{prop.status}</span>
                   </div>
                   <div className="p-4 md:p-5 flex flex-col flex-grow justify-between">
                     <div>
-                      <h3 className="font-bold text-base md:text-lg text-gray-100 mb-1 group-hover:text-yellow-500 transition-colors truncate">{prop.title}</h3>
+                      <h3 className="font-bold text-base md:text-lg text-gray-100 mb-1 truncate">{prop.title}</h3>
                       <p className="text-gray-400 text-[11px] mb-3 font-light tracking-wide">{prop.size}</p>
                     </div>
                     <div className="pt-3 border-t border-gray-800/60 flex items-center justify-between">
-                      <span className="text-base md:text-lg font-black text-yellow-500 font-mono tracking-tight">{prop.price}</span>
-                      <button onClick={(e) => { e.stopPropagation(); openFicha(prop); }} className="text-[9px] font-extrabold uppercase tracking-widest text-black bg-[#D4AF37] px-3.5 py-2 rounded-xl hover:brightness-110 transition-all border border-transparent cursor-pointer flex-shrink-0">Ver Terreno</button>
+                      <span className="text-base md:text-lg font-black text-[#D4AF37] font-mono tracking-tight">{prop.price}</span>
+                      <button onClick={() => openFicha(prop)} className="text-[9px] font-extrabold uppercase tracking-widest text-black bg-[#D4AF37] px-3.5 py-2 rounded-xl hover:brightness-110 transition-all border border-transparent cursor-pointer flex-shrink-0">Ver Terreno</button>
                     </div>
                   </div>
                 </div>
@@ -188,7 +198,7 @@ export default function CatalogPage() {
         </section>
       </div>
 
-      {/* MODAL DE FICHA TÉCNICA */}
+      {/* MODAL DE FICHA TÉCNICA (Despliegue de botones internos) */}
       {selectedProp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-md animate-fade-in">
           <div className="bg-[#141414] border border-gray-800 w-full max-w-4xl rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl max-h-[95vh] flex flex-col md:flex-row relative">
@@ -230,7 +240,7 @@ export default function CatalogPage() {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-[8px] font-bold uppercase tracking-widest text-gray-400">Precio</span>
-                    <span className="text-base font-extrabold text-yellow-500 font-mono tracking-tight">{selectedProp.price}</span>
+                    <span className="text-base font-extrabold text-[#D4AF37] font-mono tracking-tight">{selectedProp.price}</span>
                   </div>
                 </div>
 
@@ -239,16 +249,27 @@ export default function CatalogPage() {
                 </p>
               </div>
 
-              <div className="space-y-2 mt-auto pt-1 flex-shrink-0">
-                <button onClick={() => requestLeadData('PDF', selectedProp)} className="w-full bg-white text-black font-extrabold text-[10px] py-3 rounded-xl border border-gray-700 shadow-lg hover:bg-gray-200 transition-all tracking-wider uppercase cursor-pointer">Descargar Brochure en PDF</button>
-                <button onClick={() => requestLeadData('WhatsApp', selectedProp)} className="w-full bg-gradient-to-r from-[#D4AF37] to-[#C5A059] text-black font-extrabold text-[10px] py-3 rounded-xl shadow-lg hover:brightness-110 transition-all tracking-wider uppercase cursor-pointer">Cotizar por WhatsApp</button>
+              <div className="space-y-2.5 mt-auto pt-2 flex-shrink-0">
+                {selectedProp.location_url && (
+                  <button onClick={() => processAction('Ubicación', selectedProp)} className="w-full bg-gray-800 border border-gray-700 text-white font-extrabold text-[10px] py-3 rounded-xl shadow-lg hover:bg-gray-700 transition-all tracking-wider uppercase cursor-pointer flex items-center justify-center gap-1.5">
+                    <span className="text-base">📍</span> Ver Ubicación
+                  </button>
+                )}
+                {selectedProp.pdf_url && (
+                  <button onClick={() => requestAction('PDF', selectedProp)} className="w-full bg-white text-black font-extrabold text-[10px] py-3 rounded-xl border border-gray-700 shadow-lg hover:bg-gray-200 transition-all tracking-wider uppercase cursor-pointer flex items-center justify-center gap-1.5">
+                    <span className="text-base">📄</span> Descargar Brochure en PDF
+                  </button>
+                )}
+                <button onClick={() => requestAction('WhatsApp', selectedProp)} className="w-full bg-emerald-600 text-white font-extrabold text-[10px] py-3 rounded-xl shadow-lg hover:bg-emerald-500 transition-all tracking-wider uppercase cursor-pointer flex items-center justify-center gap-1.5">
+                  <span className="text-base">💬</span> Cotizar por WhatsApp
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL RÁPIDO DE CAPTURA DE DATOS (LEADS) */}
+      {/* MODAL RÁPIDO DE CAPTURA DE DATOS (LEADS ONE-TAP) */}
       {leadModal.isOpen && leadModal.prop && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
           <div className="bg-[#1a1a1a] border border-gray-800 max-w-md w-full p-6 rounded-2xl shadow-2xl relative">
@@ -256,10 +277,10 @@ export default function CatalogPage() {
             
             <div className="text-center mb-5">
               <h3 className="text-sm font-extrabold text-white mb-1 font-serif tracking-tight">¡Último paso!</h3>
-              <p className="text-gray-400 text-[10px] leading-relaxed">Ingresa tus datos para continuar con tu solicitud sobre el terreno: <strong className="text-yellow-500">{leadModal.prop.title}</strong></p>
+              <p className="text-gray-400 text-[10px] leading-relaxed">Ingresa tus datos de contacto para acceder de inmediato al sistema. Solo los pides una vez: <strong className="text-yellow-500">{leadModal.prop.title}</strong></p>
             </div>
 
-            <form onSubmit={handleLeadSubmit} className="space-y-4">
+            <form onSubmit={handleLeadSubmit} className="space-y-4 text-xs">
               <div>
                 <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1">Nombre Completo</label>
                 <input type="text" value={nombre} onChange={e => setNombre(e.target.value)} required className="w-full bg-[#111111] border border-gray-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-yellow-500" />
@@ -269,7 +290,7 @@ export default function CatalogPage() {
                 <input type="tel" value={telefono} onChange={e => setTelefono(e.target.value)} required placeholder="Ej. 502 0000 0000" className="w-full bg-[#111111] border border-gray-800 rounded-xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-yellow-500" />
               </div>
               <button type="submit" disabled={submitting} className="w-full bg-gradient-to-r from-[#D4AF37] to-[#C5A059] text-black font-black py-3.5 rounded-xl shadow-lg hover:brightness-110 transition-all uppercase tracking-wider text-xs cursor-pointer disabled:opacity-70">
-                {submitting ? 'Procesando...' : leadModal.action === 'PDF' ? 'Descargar PDF' : 'Continuar a WhatsApp'}
+                {submitting ? 'Procesando...' : leadModal.action === 'PDF' ? 'Descargar PDF' : leadModal.action === 'Ubicación' ? 'Ver Ubicación' : 'Continuar a WhatsApp'}
               </button>
             </form>
           </div>

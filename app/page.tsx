@@ -1,6 +1,27 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+
 export default function HomePage() {
+  const [clickCount, setClickCount] = useState(0);
+  let resetTimeout: NodeJS.Timeout;
+
+  const handleLogoClick = () => {
+    // Almacena el conteo de clics en el logo para el acceso oculto (3 clics)
+    clearTimeout(resetTimeout);
+    const newCount = clickCount + 1;
+    setClickCount(newCount);
+    
+    if (newCount === 3) {
+      setClickCount(0);
+      window.location.href = '/login';
+    }
+
+    resetTimeout = setTimeout(() => {
+      setClickCount(0);
+    }, 1500);
+  };
+
   return (
     <main className="min-h-screen bg-[#121212] text-gray-200 antialiased relative overflow-x-hidden flex flex-col w-full">
       {/* Fondo de marca de agua */}
@@ -9,10 +30,14 @@ export default function HomePage() {
       </div>
 
       <div className="relative z-10 w-full flex-grow flex flex-col justify-between">
-        {/* Header Responsivo con detección de administrador */}
+        {/* Header Responsivo con logo interactivo oculto */}
         <header className="border-b border-gray-800 bg-[#1a1a1a]/80 backdrop-blur-md sticky top-0 z-40 w-full">
           <div className="w-full max-w-6xl mx-auto px-3 h-20 md:h-24 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 py-1 flex-shrink-0">
+            <div 
+              onClick={handleLogoClick} 
+              className="flex items-center gap-2.5 py-1 flex-shrink-0 cursor-pointer select-none"
+              title="Acceso restringido (Triple clic)"
+            >
               <img src="/logo.png" alt="Logo" className="h-9 w-9 md:h-12 md:w-12 object-contain" />
               <div className="flex flex-col justify-center">
                 <h1 className="text-lg sm:text-xl md:text-2xl font-black tracking-tight leading-none font-serif text-[#E5E4E2]">
@@ -24,17 +49,6 @@ export default function HomePage() {
 
             <div className="flex items-center gap-1.5 md:gap-3 flex-shrink-0">
               <a href="/catalogo" className="text-[8px] md:text-xs font-semibold uppercase text-gray-300 border border-gray-700 px-2.5 py-1.5 rounded-xl bg-[#111111] tracking-wider hover:border-gray-500 transition-all">Catálogo</a>
-              {typeof window !== 'undefined' && localStorage.getItem('admin_active_session') === 'true' ? (
-                <div className="flex items-center gap-1.5">
-                  <a href="/admin" className="text-[8px] md:text-[10px] font-extrabold uppercase text-black bg-[#D4AF37] px-2.5 py-1.5 rounded-xl">Admin</a>
-                  <button onClick={() => {
-                    localStorage.removeItem('admin_active_session');
-                    window.location.href = '/';
-                  }} className="text-[8px] md:text-[10px] font-extrabold text-red-400 border border-red-500/20 px-2.5 py-1.5 rounded-xl bg-red-950/10 cursor-pointer">Salir</button>
-                </div>
-              ) : (
-                <a href="/login" className="text-[8px] md:text-xs font-black uppercase tracking-wider text-black bg-[#D4AF37] px-3.5 py-1.5 rounded-xl hover:brightness-110 transition-all">Acceder</a>
-              )}
             </div>
           </div>
         </header>
