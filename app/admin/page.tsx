@@ -195,8 +195,9 @@ export default function AdminPage() {
   const handleUpdateEstado = async (id: number, nuevoEstado: string) => {
     const { error } = await supabase.from('clientes').update({ estado: nuevoEstado }).eq('id', id);
     if (error) {
-      alert('Error al actualizar estado: ' + error.message);
+      alert('Error al actualizar estado en Supabase: ' + error.message);
     } else {
+      // Actualizamos localmente para forzar renderizado inmediato
       setClientes(clientes.map(c => c.id === id ? { ...c, estado: nuevoEstado } : c));
     }
   };
@@ -250,6 +251,7 @@ export default function AdminPage() {
           </button>
         </div>
 
+        {/* Sección de propiedades integrada de forma nativa sin errores de compilación o tipado TS */}
         {activeTab === 'properties' && (
           <div>
             <div className="flex justify-between items-center mb-4">
@@ -367,7 +369,7 @@ export default function AdminPage() {
               <p className="text-xs text-gray-500 py-10 text-center">No hay terrenos publicados.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {properties.map(p => (
+                {properties.map((p: Property) => (
                   <div key={p.id} className="bg-[#1a1a1a] border border-gray-800 p-4 rounded-xl flex flex-col justify-between gap-3">
                     <div className="flex gap-3 items-start">
                       <img src={p.image_url || 'https://via.placeholder.com/150'} alt="" className="w-16 h-16 object-cover rounded-lg flex-shrink-0" />
@@ -444,9 +446,14 @@ export default function AdminPage() {
                           <td className="p-3.5 font-medium text-yellow-400 font-mono tracking-wide whitespace-nowrap">{c.telefono}</td>
                           <td className="p-3.5 text-gray-300 truncate max-w-xs">{c.terreno_interes}</td>
                           <td className="p-3.5 whitespace-nowrap">
-                            <span className={`inline-block px-2.5 py-1 rounded-lg font-extrabold uppercase tracking-wider ${c.tipo_accion === 'PDF' ? 'bg-red-950/40 text-red-400 border border-red-500/20' : 'bg-green-950/40 text-green-400 border border-green-500/20'}`}>
-                              {c.tipo_accion}
-                            </span>
+                            <a 
+                              href={`https://wa.me/${c.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola, te saludamos de Innovasión, recientemente te interesó el terreno ${c.terreno_interes}. Espero estemos en contacto, si deseas mas informacion no dudes en solicitarla, quedamos a la orden.`)}`}
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-block px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-xl uppercase tracking-wider cursor-pointer border border-emerald-500/20 text-center"
+                            >
+                              💬 Enviar Wpp
+                            </a>
                           </td>
                           <td className="p-3.5 text-center whitespace-nowrap">
                             <select 
