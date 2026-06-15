@@ -251,7 +251,6 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* Sección de propiedades integrada de forma nativa sin errores de compilación o tipado TS */}
         {activeTab === 'properties' && (
           <div>
             <div className="flex justify-between items-center mb-4">
@@ -437,44 +436,50 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-800/50 text-white font-light">
-                      {clientesFiltrados.map(c => (
-                        <tr key={c.id} className="hover:bg-white/5 transition-colors">
-                          <td className="p-3.5 text-gray-400 font-mono whitespace-nowrap">
-                            {new Date(c.created_at).toLocaleDateString()} {new Date(c.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                          </td>
-                          <td className="p-3.5 font-semibold text-gray-200">{c.nombre}</td>
-                          <td className="p-3.5 font-medium text-yellow-400 font-mono tracking-wide whitespace-nowrap">{c.telefono}</td>
-                          <td className="p-3.5 text-gray-300 truncate max-w-xs">{c.terreno_interes}</td>
-                          <td className="p-3.5 whitespace-nowrap">
-                            <a 
-                              href={`https://wa.me/${c.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola, te saludamos de Innovasión, recientemente te interesó el terreno ${c.terreno_interes}. Espero estemos en contacto, si deseas mas informacion no dudes en solicitarla, quedamos a la orden.`)}`}
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="inline-block px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-xl uppercase tracking-wider cursor-pointer border border-emerald-500/20 text-center"
-                            >
-                              💬 Enviar Wpp
-                            </a>
-                          </td>
-                          <td className="p-3.5 text-center whitespace-nowrap">
-                            <select 
-                              value={c.estado || 'Pendiente'} 
-                              onChange={e => handleUpdateEstado(c.id, e.target.value)}
-                              className={`font-bold uppercase tracking-wider px-3 py-1.5 rounded-xl border cursor-pointer focus:outline-none ${
-                                c.estado === 'Contactado' ? 'bg-blue-950/30 border-blue-500/30 text-blue-300' : 
-                                c.estado === 'Cerrado' ? 'bg-green-950/30 border-green-500/30 text-green-300' : 
-                                'bg-yellow-950/30 border-yellow-500/30 text-yellow-300'
-                              }`}
-                            >
-                              <option value="Pendiente">Pendiente</option>
-                              <option value="Contactado">Contactado</option>
-                              <option value="Cerrado">Cerrado</option>
-                            </select>
-                          </td>
-                          <td className="p-3.5 text-center">
-                            <button onClick={() => handleDeleteCliente(c.id)} className="text-red-400 font-bold bg-red-950/30 border border-red-500/20 px-3 py-1.5 rounded-xl cursor-pointer hover:bg-red-950/50">X</button>
-                          </td>
-                        </tr>
-                      ))}
+                      {clientesFiltrados.map(c => {
+                        // Formateo inteligente para el botón de WhatsApp
+                        const cleanedPhone = c.telefono.replace(/\D/g, '');
+                        const formattedPhone = cleanedPhone.length === 8 ? `502${cleanedPhone}` : cleanedPhone;
+
+                        return (
+                          <tr key={c.id} className="hover:bg-white/5 transition-colors">
+                            <td className="p-3.5 text-gray-400 font-mono whitespace-nowrap">
+                              {new Date(c.created_at).toLocaleDateString()} {new Date(c.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </td>
+                            <td className="p-3.5 font-semibold text-gray-200">{c.nombre}</td>
+                            <td className="p-3.5 font-medium text-yellow-400 font-mono tracking-wide whitespace-nowrap">{c.telefono}</td>
+                            <td className="p-3.5 text-gray-300 truncate max-w-xs">{c.terreno_interes}</td>
+                            <td className="p-3.5 whitespace-nowrap">
+                              <a 
+                                href={`https://wa.me/${formattedPhone}?text=${encodeURIComponent(`Hola, te saludamos de Innovasión, recientemente te interesó el terreno ${c.terreno_interes}. Espero estemos en contacto, si deseas mas informacion no dudes en solicitarla, quedamos a la orden.`)}`}
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-block px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-xl uppercase tracking-wider cursor-pointer border border-emerald-500/20 text-center"
+                              >
+                                💬 Enviar Wpp
+                              </a>
+                            </td>
+                            <td className="p-3.5 text-center whitespace-nowrap">
+                              <select 
+                                value={c.estado || 'Pendiente'} 
+                                onChange={e => handleUpdateEstado(c.id, e.target.value)}
+                                className={`font-bold uppercase tracking-wider px-3 py-1.5 rounded-xl border cursor-pointer focus:outline-none ${
+                                  c.estado === 'Contactado' ? 'bg-blue-950/30 border-blue-500/30 text-blue-300' : 
+                                  c.estado === 'Cerrado' ? 'bg-green-950/30 border-green-500/30 text-green-300' : 
+                                  'bg-yellow-950/30 border-yellow-500/30 text-yellow-300'
+                                }`}
+                              >
+                                <option value="Pendiente">Pendiente</option>
+                                <option value="Contactado">Contactado</option>
+                                <option value="Cerrado">Cerrado</option>
+                              </select>
+                            </td>
+                            <td className="p-3.5 text-center">
+                              <button onClick={() => handleDeleteCliente(c.id)} className="text-red-400 font-bold bg-red-950/30 border border-red-500/20 px-3 py-1.5 rounded-xl cursor-pointer hover:bg-red-950/50">X</button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

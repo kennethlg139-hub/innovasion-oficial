@@ -3,12 +3,11 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-// Credenciales de tu proyecto Supabase
 const supabaseUrl = 'https://jovcdrplavvsfxrgaqle.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvdmNkcnBsYXZ2c2Z4cmdhcWxlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyOTEwNzksImV4cCI6MjA5Njg2NzA3OX0.cx1r9JtzBXkySrN73DMoZl7bg1cyMH-NzP3H09QVH1s';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-const whatsappNumber = '50245413470';
+const whatsappNumber = '50243752875';
 
 type Property = { 
   id: number; 
@@ -29,11 +28,9 @@ export default function CatalogPage() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   
-  // Ficha técnica (Modal)
   const [selectedProp, setSelectedProp] = useState<Property | null>(null);
   const [activeImg, setActiveImg] = useState<string>('');
 
-  // Captura de datos (Leads One-Tap)
   const [leadModal, setLeadModal] = useState<{ isOpen: boolean; action: 'WhatsApp' | 'PDF' | 'Ubicación'; prop: Property | null }>({ isOpen: false, action: 'WhatsApp', prop: null });
   const [nombre, setNombre] = useState('');
   const [telefono, setTelefono] = useState('');
@@ -49,7 +46,6 @@ export default function CatalogPage() {
         setIsAdmin(true);
       }
 
-      // Recuperar datos si ya están en memoria local
       if (typeof window !== 'undefined') {
         const savedName = localStorage.getItem('lead_name');
         const savedPhone = localStorage.getItem('lead_phone');
@@ -78,41 +74,26 @@ export default function CatalogPage() {
     ]);
   };
 
-  // Procesamiento inteligente de acciones
-  const processAction = async (action: 'WhatsApp' | 'PDF' | 'Ubicación', prop: Property) => {
-    // Registramos en segundo plano
-    await saveLeadRecordAndRemember(prop.title, action);
-
+  const processAction = (action: 'WhatsApp' | 'PDF' | 'Ubicación', prop: Property) => {
     if (action === 'PDF' && prop.pdf_url) {
       window.open(prop.pdf_url, '_blank');
     } else if (action === 'WhatsApp') {
       const mensajeWpp = `Hola, me interesa el terreno: ${prop.title} (${prop.price}). Mi nombre es ${nombre}.`;
-      window.open(`https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodeURIComponent(mensajeWpp)}`, '_blank');
+      window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensajeWpp)}`, '_blank');
     } else if (action === 'Ubicación' && prop.location_url) {
       window.open(prop.location_url, '_blank');
     }
     
-    // Cierra modal de ficha al completar interacción externa
     setLeadModal({ isOpen: false, action: 'WhatsApp', prop: null });
     setSelectedProp(null);
   };
 
-  const saveLeadRecordAndRemember = async (propTitle: string, action: 'WhatsApp' | 'PDF' | 'Ubicación') => {
-    if (isAdmin) return;
-    if (nombre && telefono) {
-      localStorage.setItem('lead_name', nombre);
-      localStorage.setItem('lead_phone', telefono);
-      await saveLeadSupabase(propTitle, action);
-    }
-  };
-
-  const requestAction = (action: 'WhatsApp' | 'PDF' | 'Ubicación', prop: Property) => {
-    // Si es Admin o si el usuario ya dejó sus datos en el localStorage, pasa directo
-    if (isAdmin || (localStorage.getItem('lead_name') && localStorage.getItem('lead_phone'))) {
-      processAction(action, prop);
-    } else {
-      // Primera vez: requiere llenar datos
+  const requestAction = async (action: 'WhatsApp' | 'PDF' | 'Ubicación', prop: Property) => {
+    if (!isAdmin && (!nombre || !telefono)) {
       setLeadModal({ isOpen: true, action, prop });
+    } else {
+      if (!isAdmin) await saveLeadSupabase(prop.title, action);
+      processAction(action, prop);
     }
   };
 
@@ -121,14 +102,12 @@ export default function CatalogPage() {
     if (!leadModal.prop) return;
     setSubmitting(true);
 
-    // Guardamos en localStorage y enviamos a bd
     localStorage.setItem('lead_name', nombre);
     localStorage.setItem('lead_phone', telefono);
+    
     await saveLeadSupabase(leadModal.prop.title, leadModal.action);
 
     setSubmitting(false);
-
-    // Ejecutamos acción
     processAction(leadModal.action, leadModal.prop);
   };
 
@@ -139,7 +118,6 @@ export default function CatalogPage() {
       </div>
 
       <div className="relative z-10 w-full">
-        {/* Header estático responsivo */}
         <header className="border-b border-gray-800 bg-[#1a1a1a]/80 backdrop-blur-md sticky top-0 z-40 w-full">
           <div className="w-full max-w-6xl mx-auto px-3 h-20 md:h-24 flex items-center justify-between gap-2">
             <div className="flex items-center gap-3 py-1 flex-shrink-0">
@@ -161,13 +139,11 @@ export default function CatalogPage() {
           </div>
         </header>
 
-        {/* Título de sección */}
         <section className="px-3 pt-8 md:pt-16 pb-6 text-center w-full max-w-4xl mx-auto">
           <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight mb-2 text-white font-serif">Catálogo de Propiedades</h1>
           <p className="text-gray-500 text-[10px] md:text-xs font-light tracking-wide max-w-sm md:max-w-none mx-auto">Presiona "Ver Terreno" para ver la Ficha Técnica, galería de fotos, ubicación y solicitar información.</p>
         </section>
 
-        {/* Cuadrícula de propiedades (Aspecto limpio) */}
         <section className="w-full max-w-6xl mx-auto px-3 pb-24">
           {loading ? (
             <div className="flex justify-center py-20"><div className="w-8 h-8 border-t-yellow-500 border-2 rounded-full animate-spin"></div></div>
@@ -179,11 +155,25 @@ export default function CatalogPage() {
                 <div key={prop.id} className="bg-[#1a1a1a] rounded-2xl overflow-hidden border border-gray-800 flex flex-col shadow-xl w-full">
                   <div className="h-48 sm:h-56 relative overflow-hidden">
                     <img src={prop.image_url} alt={prop.title} className="w-full h-full object-cover" />
-                    <span className={`absolute top-3 right-3 text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded-full tracking-wider ${prop.status === 'Disponible' ? 'bg-green-500/20 text-green-300 border border-green-500/30' : prop.status === 'Reservado' ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'}`}>{prop.status}</span>
                   </div>
                   <div className="p-4 md:p-5 flex flex-col flex-grow justify-between">
                     <div>
-                      <h3 className="font-bold text-base md:text-lg text-gray-100 mb-1 truncate">{prop.title}</h3>
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <h3 className="font-bold text-base md:text-lg text-gray-100 truncate leading-tight">
+                          {prop.title}
+                        </h3>
+                        <span 
+                          className={`text-[8px] font-extrabold uppercase px-2 py-0.5 rounded border tracking-wider flex-shrink-0 self-start mt-0.5 ${
+                            prop.status === 'Disponible' 
+                              ? 'bg-green-500/15 text-green-300 border-green-500/20' 
+                              : prop.status === 'Reservado' 
+                              ? 'bg-yellow-500/15 text-yellow-300 border-yellow-500/20' 
+                              : 'bg-red-500/15 text-red-300 border-red-500/20'
+                          }`}
+                        >
+                          {prop.status}
+                        </span>
+                      </div>
                       <p className="text-gray-400 text-[11px] mb-3 font-light tracking-wide">{prop.size}</p>
                     </div>
                     <div className="pt-3 border-t border-gray-800/60 flex items-center justify-between">
@@ -198,7 +188,6 @@ export default function CatalogPage() {
         </section>
       </div>
 
-      {/* MODAL DE FICHA TÉCNICA (Despliegue de botones internos) */}
       {selectedProp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-md animate-fade-in">
           <div className="bg-[#141414] border border-gray-800 w-full max-w-4xl rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl max-h-[95vh] flex flex-col md:flex-row relative">
@@ -251,7 +240,7 @@ export default function CatalogPage() {
 
               <div className="space-y-2.5 mt-auto pt-2 flex-shrink-0">
                 {selectedProp.location_url && (
-                  <button onClick={() => processAction('Ubicación', selectedProp)} className="w-full bg-gray-800 border border-gray-700 text-white font-extrabold text-[10px] py-3 rounded-xl shadow-lg hover:bg-gray-700 transition-all tracking-wider uppercase cursor-pointer flex items-center justify-center gap-1.5">
+                  <button onClick={() => requestAction('Ubicación', selectedProp)} className="w-full bg-gray-800 border border-gray-700 text-white font-extrabold text-[10px] py-3 rounded-xl shadow-lg hover:bg-gray-700 transition-all tracking-wider uppercase cursor-pointer flex items-center justify-center gap-1.5">
                     <span className="text-base">📍</span> Ver Ubicación
                   </button>
                 )}
@@ -261,7 +250,7 @@ export default function CatalogPage() {
                   </button>
                 )}
                 <button onClick={() => requestAction('WhatsApp', selectedProp)} className="w-full bg-emerald-600 text-white font-extrabold text-[10px] py-3 rounded-xl shadow-lg hover:bg-emerald-500 transition-all tracking-wider uppercase cursor-pointer flex items-center justify-center gap-1.5">
-                  <span className="text-base">💬</span> Cotizar por WhatsApp
+                  <span className="text-base">💬</span> WhatsApp
                 </button>
               </div>
             </div>
@@ -269,7 +258,6 @@ export default function CatalogPage() {
         </div>
       )}
 
-      {/* MODAL RÁPIDO DE CAPTURA DE DATOS (LEADS ONE-TAP) */}
       {leadModal.isOpen && leadModal.prop && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
           <div className="bg-[#1a1a1a] border border-gray-800 max-w-md w-full p-6 rounded-2xl shadow-2xl relative">
