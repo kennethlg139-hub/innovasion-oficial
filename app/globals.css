@@ -8,12 +8,48 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), Arial, sans-serif;
+  font-family: Arial, sans-serif;
+}
+
+/* --- ANIMACIONES CORE --- */
+
+@keyframes metallic-spin-once {
+  0% { transform: perspective(1000px) rotateY(-60deg) scale(0.8); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: perspective(1000px) rotateY(60deg) scale(1); }
+}
+
+@keyframes fade-to-black {
+  0% { opacity: 1; filter: blur(0px); }
+  100% { opacity: 0; filter: blur(20px); }
+}
+
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+
+/* --- UTILIDADES --- */
+
+@layer utilities {
+  .preserve-3d { transform-style: preserve-3d; }
+  
+  .animate-metallic-spin-once { 
+    animation: metallic-spin-once 3.5s ease-in-out forwards; 
+  }
+  
+  .animate-fade-to-black { 
+    animation: fade-to-black 1s ease-in-out forwards; 
+  }
+  
+  .animate-typing { 
+    overflow: hidden; 
+    white-space: nowrap; 
+    animation: typing 3.5s steps(40, end) forwards; 
+  }
 }
