@@ -1,23 +1,26 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useRef } from 'react';
 
 export default function HomePage() {
   const [clickCount, setClickCount] = useState(0);
-  let resetTimeout: NodeJS.Timeout;
+  const resetTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const handleLogoClick = () => {
-    // Almacena el conteo de clics en el logo para el acceso oculto (3 clics)
-    clearTimeout(resetTimeout);
+    // Limpiamos el timeout anterior para asegurar que los 3 clics sean seguidos
+    if (resetTimeout.current) clearTimeout(resetTimeout.current);
+    
     const newCount = clickCount + 1;
     setClickCount(newCount);
     
     if (newCount === 3) {
       setClickCount(0);
       window.location.href = '/login';
+      return;
     }
 
-    resetTimeout = setTimeout(() => {
+    // Si pasan más de 1.5 segundos entre clics, reiniciamos el contador
+    resetTimeout.current = setTimeout(() => {
       setClickCount(0);
     }, 1500);
   };
