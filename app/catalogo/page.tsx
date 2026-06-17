@@ -56,6 +56,29 @@ export default function CatalogPage() {
     load();
   }, []);
 
+  // --- LÓGICA DE CONTROL DE HISTORIAL (PARA EL BOTÓN ATRÁS) ---
+  useEffect(() => {
+    const handlePopState = () => {
+      if (selectedProp) {
+        setSelectedProp(null);
+      }
+    };
+
+    if (selectedProp) {
+      // Al abrir el modal, añadimos un estado al historial
+      window.history.pushState({ modalOpen: true }, '');
+      window.addEventListener('popstate', handlePopState);
+    } else {
+      // Si el modal se cierra, limpiamos el estado del historial si es necesario
+      if (window.history.state?.modalOpen) {
+        window.history.back();
+      }
+    }
+
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedProp]);
+  // -----------------------------------------------------------
+
   const openFicha = (prop: Property) => {
     setSelectedProp(prop);
     setActiveImg(prop.image_url);
