@@ -21,7 +21,8 @@ body {
 @keyframes metallic-spin-once {
   0% { transform: perspective(1000px) rotateY(-60deg) scale(0.8); opacity: 0; }
   20% { opacity: 1; }
-  100% { transform: perspective(1000px) rotateY(60deg) scale(1); }
+  /* Termina en 0deg (viendo al frente) */
+  100% { transform: perspective(1000px) rotateY(0deg) scale(1); }
 }
 
 @keyframes fade-to-black {
