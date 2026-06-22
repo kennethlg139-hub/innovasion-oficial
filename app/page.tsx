@@ -46,7 +46,7 @@ export default function HomePage() {
           clearInterval(msgInterval);
           sessionStorage.setItem('hasNavigated', 'true');
         }, 700); 
-      }, 1500); 
+      }, 1800); 
 
       return () => { clearTimeout(timer); clearInterval(msgInterval); };
     } else {

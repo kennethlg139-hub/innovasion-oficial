@@ -20,17 +20,24 @@ type Cliente = {
 type Property = {
   id: number;
   title: string;
+  description?: string;
   size: string;
   price: string;
   status: string;
   image_url: string;
   image_url_2?: string;
   image_url_3?: string;
+  image_url_4?: string;
+  image_url_5?: string;
+  image_url_6?: string;
+  image_url_7?: string;
+  image_url_8?: string;
+  image_url_9?: string;
+  image_url_10?: string;
   pdf_url?: string;
   location_url?: string;
 };
 
-// --- NUEVO TIPO ---
 type SocialLink = {
   id: number;
   platform: string;
@@ -39,7 +46,6 @@ type SocialLink = {
 
 export default function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false);
-  // --- ACTUALIZADO: Añadido 'social' al tipo ---
   const [activeTab, setActiveTab] = useState<'properties' | 'clients' | 'social'>('properties');
   
   // Propiedades
@@ -51,21 +57,17 @@ export default function AdminPage() {
   
   // Form state propiedades
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [size, setSize] = useState('');
   const [price, setPrice] = useState('');
   const [status, setStatus] = useState('Disponible');
   const [locationUrl, setLocationUrl] = useState('');
   
-  // Archivos seleccionados
-  const [img1, setImg1] = useState<File | null>(null);
-  const [img2, setImg2] = useState<File | null>(null);
-  const [img3, setImg3] = useState<File | null>(null);
+  // MOTOR DE IMÁGENES SIMPLIFICADO: Un solo arreglo mezcla URLs existentes y Archivos nuevos
+  const [images, setImages] = useState<(File | string)[]>([]);
+  
+  // PDF
   const [pdfFile, setPdfFile] = useState<File | null>(null);
-
-  // URLs actuales (para edición)
-  const [url1, setUrl1] = useState('');
-  const [url2, setUrl2] = useState('');
-  const [url3, setUrl3] = useState('');
   const [pdfUrl, setPdfUrl] = useState('');
 
   // Clientes
@@ -73,7 +75,7 @@ export default function AdminPage() {
   const [loadingClients, setLoadingClients] = useState(false);
   const [filtroEstado, setFiltroEstado] = useState<string>('Todos');
 
-  // --- NUEVOS ESTADOS SOCIALES ---
+  // Redes Sociales
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [newPlatform, setNewPlatform] = useState('');
   const [newUrl, setNewUrl] = useState('');
@@ -94,7 +96,6 @@ export default function AdminPage() {
     setLoadingProps(false);
   };
 
-  // --- NUEVAS FUNCIONES SOCIALES ---
   const loadSocialLinks = async () => {
     const { data } = await supabase.from('social_links').select('*');
     setSocialLinks(data || []);
@@ -126,6 +127,22 @@ export default function AdminPage() {
     return data.publicUrl;
   };
 
+  // MANEJADOR MULTI-IMAGEN
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      if (images.length + newFiles.length > 10) {
+        alert('Solo puedes subir un máximo de 10 fotos por terreno.');
+        return;
+      }
+      setImages([...images, ...newFiles]);
+    }
+  };
+
+  const removeImage = (indexToRemove: number) => {
+    setImages(images.filter((_, idx) => idx !== indexToRemove));
+  };
+
   const handleSaveProperty = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !price) {
@@ -135,19 +152,43 @@ export default function AdminPage() {
 
     setUploading(true);
     try {
-      const finalUrl1 = await uploadFile(img1, url1);
-      const finalUrl2 = await uploadFile(img2, url2);
-      const finalUrl3 = await uploadFile(img3, url3);
+      // 1. Procesar todas las imágenes en el arreglo
+      const finalUrls: string[] = [];
+      for (let i = 0; i < 10; i++) {
+        const item = images[i];
+        if (item instanceof File) {
+          // Si es un archivo nuevo, lo sube y guarda la URL
+          const url = await uploadFile(item, '');
+          finalUrls.push(url);
+        } else if (typeof item === 'string') {
+          // Si ya era un string (URL existente que no se borró), lo mantiene
+          finalUrls.push(item);
+        } else {
+          // Si no hay foto para este espacio, manda vacío
+          finalUrls.push('');
+        }
+      }
+
+      // 2. Procesar el PDF
       const finalPdfUrl = await uploadFile(pdfFile, pdfUrl);
 
+      // 3. Empaquetar todo para Supabase
       const propData = {
         title,
+        description,
         size,
         price,
         status,
-        image_url: finalUrl1 || 'https://via.placeholder.com/400',
-        image_url_2: finalUrl2,
-        image_url_3: finalUrl3,
+        image_url: finalUrls[0] || 'https://via.placeholder.com/400',
+        image_url_2: finalUrls[1] || null,
+        image_url_3: finalUrls[2] || null,
+        image_url_4: finalUrls[3] || null,
+        image_url_5: finalUrls[4] || null,
+        image_url_6: finalUrls[5] || null,
+        image_url_7: finalUrls[6] || null,
+        image_url_8: finalUrls[7] || null,
+        image_url_9: finalUrls[8] || null,
+        image_url_10: finalUrls[9] || null,
         pdf_url: finalPdfUrl,
         location_url: locationUrl,
       };
@@ -176,21 +217,22 @@ export default function AdminPage() {
   const handleEditClick = (prop: Property) => {
     setEditingProp(prop);
     setTitle(prop.title);
+    setDescription(prop.description || '');
     setSize(prop.size);
     setPrice(prop.price);
     setStatus(prop.status);
     setLocationUrl(prop.location_url || '');
     
-    setUrl1(prop.image_url || '');
-    setUrl2(prop.image_url_2 || '');
-    setUrl3(prop.image_url_3 || '');
+    // Recopilar todas las URLs que existan en la BD para este terreno y ponerlas en el arreglo
+    const existingUrls = [
+      prop.image_url, prop.image_url_2, prop.image_url_3, prop.image_url_4, prop.image_url_5,
+      prop.image_url_6, prop.image_url_7, prop.image_url_8, prop.image_url_9, prop.image_url_10
+    ].filter(Boolean) as string[];
+    
+    setImages(existingUrls);
+    
     setPdfUrl(prop.pdf_url || '');
-
-    setImg1(null);
-    setImg2(null);
-    setImg3(null);
     setPdfFile(null);
-
     setShowAddForm(true);
   };
 
@@ -203,17 +245,13 @@ export default function AdminPage() {
 
   const resetForm = () => {
     setTitle('');
+    setDescription('');
     setSize('');
     setPrice('');
     setStatus('Disponible');
     setLocationUrl('');
-    setUrl1('');
-    setUrl2('');
-    setUrl3('');
+    setImages([]);
     setPdfUrl('');
-    setImg1(null);
-    setImg2(null);
-    setImg3(null);
     setPdfFile(null);
   };
 
@@ -281,7 +319,6 @@ export default function AdminPage() {
             className={`text-[10px] font-extrabold uppercase tracking-widest px-5 py-3 cursor-pointer border-b-2 transition-all ${activeTab === 'clients' ? 'border-[#D4AF37] text-[#D4AF37]' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>
             👥 Clientes / Prospectos
           </button>
-          {/* --- NUEVO BOTÓN --- */}
           <button 
             onClick={() => switchTab('social')} 
             className={`text-[10px] font-extrabold uppercase tracking-widest px-5 py-3 cursor-pointer border-b-2 transition-all ${activeTab === 'social' ? 'border-[#D4AF37] text-[#D4AF37]' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>
@@ -289,7 +326,6 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* --- NUEVA SECCIÓN SOCIAL --- */}
         {activeTab === 'social' && (
           <div className="bg-[#1a1a1a] border border-gray-800 p-6 rounded-2xl mb-6">
             <h2 className="text-sm font-bold text-white mb-4">Gestionar Enlaces de Redes Sociales</h2>
@@ -314,7 +350,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* --- MANTENEMOS TU CÓDIGO ORIGINAL --- */}
         {activeTab === 'properties' && (
           <div>
             <div className="flex justify-between items-center mb-4">
@@ -329,7 +364,6 @@ export default function AdminPage() {
 
             {showAddForm && (
               <form onSubmit={handleSaveProperty} className="bg-[#1a1a1a] border border-gray-800 p-5 rounded-2xl mb-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                {/* ... (Tu formulario original de propiedades se mantiene igual) ... */}
                 <div className="col-span-full">
                   <h3 className="font-bold text-white mb-3 border-b border-gray-800 pb-2">{editingProp ? 'Editar Terreno' : 'Nuevo Terreno'}</h3>
                 </div>
@@ -353,33 +387,57 @@ export default function AdminPage() {
                     <option value="Vendido">Vendido</option>
                   </select>
                 </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-gray-400 uppercase tracking-wider text-[9px] mb-1 font-bold">Descripción del Terreno</label>
+                  <textarea 
+                    value={description} 
+                    onChange={e => setDescription(e.target.value)} 
+                    rows={3}
+                    placeholder="Ej. Hermoso terreno plano, listo para construir, cuenta con servicios básicos cercanos..." 
+                    className="w-full bg-[#111111] border border-gray-700 p-2.5 rounded-xl text-white focus:outline-none focus:border-[#D4AF37] resize-none" 
+                  />
+                </div>
                 
                 <div className="md:col-span-2">
                   <label className="block text-gray-400 uppercase tracking-wider text-[9px] mb-1 font-bold">Enlace de Ubicación (Google Maps o Waze)</label>
                   <input type="text" value={locationUrl} onChange={e => setLocationUrl(e.target.value)} placeholder="Ej. https://maps.app.goo.gl/..." className="w-full bg-[#111111] border border-gray-700 p-2.5 rounded-xl text-white focus:outline-none focus:border-[#D4AF37]" />
                 </div>
 
+                {/* NUEVO DISEÑO DE GALERÍA: Simplificado y elegante */}
                 <div className="md:col-span-2 border-t border-gray-800 pt-4 mt-2">
-                  <span className="block text-gray-400 uppercase tracking-wider text-[9px] mb-2 font-bold">Galería de Imágenes (Hasta 3 fotos)</span>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="flex flex-col items-center justify-center border border-dashed border-gray-700 bg-[#111111] h-24 rounded-xl cursor-pointer hover:border-gray-500">
-                        {img1 || url1 ? <span className="text-[8px] text-green-400 font-bold">Foto 1 cargada</span> : <><span className="text-xl text-gray-500">+</span><span className="text-[8px] text-gray-500 mt-1">Foto 1</span></>}
-                        <input type="file" accept="image/*" onChange={e => e.target.files?.[0] && setImg1(e.target.files[0])} className="hidden" />
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="block text-gray-400 uppercase tracking-wider text-[9px] font-bold">Galería de Imágenes</span>
+                    <span className="text-[9px] text-gray-500 font-bold">{images.length} / 10 Fotos</span>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-3">
+                    {/* Renderizar miniaturas de imágenes seleccionadas/existentes */}
+                    {images.map((img, idx) => (
+                      <div key={idx} className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border border-gray-700 group">
+                        <img 
+                          src={typeof img === 'string' ? img : URL.createObjectURL(img)} 
+                          className="w-full h-full object-cover transition-transform group-hover:scale-110" 
+                          alt={`Preview ${idx + 1}`}
+                        />
+                        <button 
+                          type="button" 
+                          onClick={() => removeImage(idx)} 
+                          className="absolute top-1 right-1 bg-black/70 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold transition-colors cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+
+                    {/* Botón de "Agregar" que desaparece si llegas a 10 */}
+                    {images.length < 10 && (
+                      <label className="flex flex-col items-center justify-center border border-dashed border-gray-700 bg-[#111111] w-20 h-20 sm:w-24 sm:h-24 rounded-xl cursor-pointer hover:border-[#D4AF37] transition-colors">
+                        <span className="text-2xl text-gray-500 mb-1">+</span>
+                        <span className="text-[8px] text-gray-500 font-bold uppercase">Subir Fotos</span>
+                        <input type="file" accept="image/*" multiple onChange={handleImageSelect} className="hidden" />
                       </label>
-                    </div>
-                    <div>
-                      <label className="flex flex-col items-center justify-center border border-dashed border-gray-700 bg-[#111111] h-24 rounded-xl cursor-pointer hover:border-gray-500">
-                        {img2 || url2 ? <span className="text-[8px] text-green-400 font-bold">Foto 2 cargada</span> : <><span className="text-xl text-gray-500">+</span><span className="text-[8px] text-gray-500 mt-1">Foto 2</span></>}
-                        <input type="file" accept="image/*" onChange={e => e.target.files?.[0] && setImg2(e.target.files[0])} className="hidden" />
-                      </label>
-                    </div>
-                    <div>
-                      <label className="flex flex-col items-center justify-center border border-dashed border-gray-700 bg-[#111111] h-24 rounded-xl cursor-pointer hover:border-gray-500">
-                        {img3 || url3 ? <span className="text-[8px] text-green-400 font-bold">Foto 3 cargada</span> : <><span className="text-xl text-gray-500">+</span><span className="text-[8px] text-gray-500 mt-1">Foto 3</span></>}
-                        <input type="file" accept="image/*" onChange={e => e.target.files?.[0] && setImg3(e.target.files[0])} className="hidden" />
-                      </label>
-                    </div>
+                    )}
                   </div>
                 </div>
 

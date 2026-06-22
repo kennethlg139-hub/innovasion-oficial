@@ -21,6 +21,13 @@ type Property = {
   image_url: string;
   image_url_2?: string;
   image_url_3?: string;
+  image_url_4?: string;
+  image_url_5?: string;
+  image_url_6?: string;
+  image_url_7?: string;
+  image_url_8?: string;
+  image_url_9?: string;
+  image_url_10?: string;
   pdf_url?: string;
   description?: string;
   location_url?: string;
@@ -197,16 +204,52 @@ export default function CatalogPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/80 backdrop-blur-md animate-fade-in">
            <div className="bg-[#141414] border border-gray-800 w-full max-w-4xl rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl max-h-[95vh] flex flex-col md:flex-row relative">
               <button onClick={() => setSelectedProp(null)} className="absolute top-3 right-3 z-20 bg-black/60 hover:bg-black text-white w-8 h-8 rounded-full flex items-center justify-center border border-gray-700 text-[10px] font-black cursor-pointer">✕</button>
+              
               <div className="w-full md:w-1/2 bg-black p-4 flex flex-col">
-                 <img src={activeImg} className="w-full h-64 md:h-80 object-contain rounded-xl mb-4" />
-                 <div className="grid grid-cols-3 gap-2 h-16">
-                    {[selectedProp.image_url, selectedProp.image_url_2, selectedProp.image_url_3].filter(Boolean).map((img, i) => (
-                      <button key={i} onClick={() => setActiveImg(img!)} className={`rounded-lg overflow-hidden border-2 cursor-pointer ${activeImg === img ? 'border-yellow-500' : 'border-transparent'}`}>
-                        <img src={img!} className="w-full h-full object-cover" />
+                 {/* CONTENEDOR DE IMAGEN PRINCIPAL CON FLECHAS */}
+                 <div className="relative w-full h-64 md:h-80 mb-4 group">
+                   <img src={activeImg} className="w-full h-full object-contain rounded-xl" />
+                   
+                   {/* FLECHA IZQUIERDA */}
+                   <button 
+                     onClick={() => {
+                       // Extraemos todas las imágenes disponibles (hasta 6 para el futuro)
+                       const imgs = [selectedProp.image_url, selectedProp.image_url_2, selectedProp.image_url_3, selectedProp.image_url_4, selectedProp.image_url_5, selectedProp.image_url_6, selectedProp.image_url_7, selectedProp.image_url_8, selectedProp.image_url_9, selectedProp.image_url_10,].filter(Boolean) as string[];
+                       const idx = imgs.indexOf(activeImg);
+                       setActiveImg(imgs[idx === 0 ? imgs.length - 1 : idx - 1]);
+                     }}
+                     className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-[#D4AF37] text-white w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer border border-white/20"
+                   >
+                     ❮
+                   </button>
+
+                   {/* FLECHA DERECHA */}
+                   <button 
+                     onClick={() => {
+                       const imgs = [selectedProp.image_url, selectedProp.image_url_2, selectedProp.image_url_3, selectedProp.image_url_4, selectedProp.image_url_5, selectedProp.image_url_6].filter(Boolean) as string[];
+                       const idx = imgs.indexOf(activeImg);
+                       setActiveImg(imgs[idx === imgs.length - 1 ? 0 : idx + 1]);
+                     }}
+                     className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-[#D4AF37] text-white w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer border border-white/20"
+                   >
+                     ❯
+                   </button>
+                 </div>
+
+                 {/* CARRUSEL DE MINIATURAS (SCROLL HORIZONTAL) */}
+                 <div className="flex gap-2 h-16 md:h-20 overflow-x-auto pb-2 snap-x scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                    {[selectedProp.image_url, selectedProp.image_url_2, selectedProp.image_url_3, selectedProp.image_url_4, selectedProp.image_url_5, selectedProp.image_url_6].filter(Boolean).map((img, i) => (
+                      <button 
+                        key={i} 
+                        onClick={() => setActiveImg(img as string)} 
+                        className={`flex-shrink-0 w-24 snap-start rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${activeImg === img ? 'border-[#D4AF37] opacity-100' : 'border-transparent opacity-40 hover:opacity-100'}`}
+                      >
+                        <img src={img as string} className="w-full h-full object-cover" />
                       </button>
                     ))}
                  </div>
               </div>
+
               <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col justify-between overflow-y-auto">
                  <div>
                     <h2 className="text-2xl font-black text-white mb-2">{selectedProp.title}</h2>
