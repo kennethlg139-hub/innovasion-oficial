@@ -181,12 +181,16 @@ export default function CatalogPage() {
           <div className="flex justify-center gap-6">
             {socialLinks.map(s => (
               <a key={s.id} href={s.url} target="_blank" rel="noreferrer" className="hover:opacity-75 transition-opacity">
-                <img src={s.icon_path} alt={s.platform} className="w-10 h-10 object-contain" />
+                <img 
+                  src={`https://cdn.simpleicons.org/${s.platform.toLowerCase()}`} 
+                  alt={s.platform} 
+                  className="w-10 h-10 object-contain invert" 
+                />
               </a>
             ))}
           </div>
         </section>
-      </div>
+        </div>
       
       {/* Modales */}
       {selectedProp && (
@@ -224,16 +228,26 @@ export default function CatalogPage() {
 
       {leadModal.isOpen && leadModal.prop && (
          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <div className="bg-[#1a1a1a] border border-gray-800 max-w-sm w-full p-6 rounded-2xl shadow-2xl">
-               <h3 className="text-white font-bold mb-4">Ingresa tus datos</h3>
+            <div className="bg-[#1a1a1a] border border-gray-800 max-w-sm w-full p-6 rounded-2xl shadow-2xl relative">
+               
+               {/* BOTÓN DE CERRAR (LA "X") */}
+               <button 
+                  onClick={() => setLeadModal({ isOpen: false, action: 'WhatsApp', prop: null })} 
+                  className="absolute top-4 right-4 text-gray-500 hover:text-white text-sm font-black cursor-pointer transition-colors"
+               >
+                  ✕
+               </button>
+
+               <h3 className="text-white font-bold mb-4">Ingresa tu nombre y número de telefono para continuar</h3>
                <form onSubmit={handleLeadSubmit} className="space-y-4">
-                  <input type="text" placeholder="Nombre" value={nombre} onChange={e => setNombre(e.target.value)} required className="w-full bg-[#111111] p-3 rounded-xl border border-gray-800 text-white" />
-                  <input type="tel" placeholder="Teléfono" value={telefono} onChange={e => setTelefono(e.target.value)} required className="w-full bg-[#111111] p-3 rounded-xl border border-gray-800 text-white" />
+                  <input type="text" placeholder="Nombre" value={nombre} onChange={e => setNombre(e.target.value)} required className="w-full bg-[#111111] p-3 rounded-xl border border-gray-800 text-white focus:border-[#D4AF37] outline-none transition-all" />
+                  <input type="tel" placeholder="Teléfono" value={telefono} onChange={e => setTelefono(e.target.value)} required className="w-full bg-[#111111] p-3 rounded-xl border border-gray-800 text-white focus:border-[#D4AF37] outline-none transition-all" />
                   <button type="submit" className={btnClass}>Continuar</button>
                </form>
             </div>
-         </div>
+          </div>
       )}
-    </main>
-  );
-}
+   </main>
+   );
+ }
+ 

@@ -45,8 +45,8 @@ export default function HomePage() {
           setIsSplashFinished(true);
           clearInterval(msgInterval);
           sessionStorage.setItem('hasNavigated', 'true');
-        }, 1000); 
-      }, 3500); 
+        }, 700); 
+      }, 1500); 
 
       return () => { clearTimeout(timer); clearInterval(msgInterval); };
     } else {
@@ -121,7 +121,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* MODAL COLLAGE REDES SOCIALES */}
+       {/* MODAL COLLAGE REDES SOCIALES */}
         {showSocial && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={() => setShowSocial(false)}>
             <div className="bg-[#121212] p-8 rounded-3xl max-w-xs w-full border border-[#D4AF37]/30 shadow-2xl text-center" onClick={e => e.stopPropagation()}>
@@ -129,7 +129,12 @@ export default function HomePage() {
               <div className="grid grid-cols-2 gap-4 mb-8">
                 {socialLinks.map((link) => (
                   <a key={link.id} href={link.url} target="_blank" className="bg-[#1a1a1a] p-4 rounded-2xl flex items-center justify-center hover:bg-[#D4AF37] transition-all">
-                    <img src={`/${link.name}.png`} alt={link.name} className="w-10 h-10 object-contain" />
+                    {/* AQUÍ ESTÁ LA SOLUCIÓN: Usamos SimpleIcons y aseguramos compatibilidad con platform o name */}
+                    <img 
+                      src={`https://cdn.simpleicons.org/${(link.platform || link.name || '').toLowerCase()}`} 
+                      alt={link.platform || link.name} 
+                      className="w-10 h-10 object-contain invert" 
+                    />
                   </a>
                 ))}
               </div>
@@ -137,6 +142,28 @@ export default function HomePage() {
             </div>
           </div>
         )}
+
+      {/* MODAL QUIÉNES SOMOS */}
+{showAbout && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={() => setShowAbout(false)}>
+    <div className="bg-[#121212] p-8 rounded-3xl max-w-md w-full border border-[#D4AF37]/30 shadow-2xl text-center" onClick={e => e.stopPropagation()}>
+      <h3 className="font-bold text-[#D4AF37] mb-4 uppercase tracking-[0.2em] text-sm">¿Quiénes Somos?</h3>
+      
+      <div className="text-gray-300 text-sm mb-8 space-y-4 text-left">
+        <p>
+          En <strong className="text-white">INNOVASIÓN</strong>, somos asesores inmobiliarios comprometidos con encontrar el lugar ideal para tu hogar.
+        </p>
+        <p>
+          Queremos que juntos encontremos un lugar para construir tu futuro.
+        </p>
+      </div>
+
+      <button onClick={() => setShowAbout(false)} className="w-full py-3 border border-[#D4AF37] text-[10px] text-[#D4AF37] uppercase tracking-widest hover:bg-[#D4AF37] hover:text-black transition-all rounded-xl cursor-pointer">
+        Cerrar
+      </button>
+    </div>
+  </div>
+)}
 
         <footer className="w-full border-t border-gray-800/60 py-5 text-center px-2">
           <p className="text-[8px] md:text-[9px] text-gray-600 uppercase tracking-[0.15em] font-bold">INNOVASIÓN © 2026 — Un lugar para tu hogar</p>
